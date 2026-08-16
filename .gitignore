@@ -5,6 +5,8 @@ node_modules/
 
 # Claude
 .claude
+CLAUDE.md
+AGENTS.md
 
 # Expo
 .expo/
