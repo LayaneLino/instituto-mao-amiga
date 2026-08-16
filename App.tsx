@@ -1,23 +1,31 @@
 import React from 'react';
-import { SafeAreaView, StatusBar, StyleSheet } from 'react-native';
-import TelaListaPontos from './TelaListaPontos'; 
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import TelaListaPontos from './TelaListaPontos';
 import TelaDetalhePonto from './TelaDetalhePonto';
+
+export type RootStackParamList = {
+  ListaPontos: undefined;
+  DetalhePonto: { id: string };
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F4F6F8" />
-      
-      <TelaDetalhePonto />
-      {/*Para ver a outra tela: <TelaDetalhePonto /> */}
-
-    </SafeAreaView>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="ListaPontos" screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
+        <Stack.Screen 
+          name="ListaPontos" 
+          component={TelaListaPontos} 
+          options={{ title: 'Instituto Mão Amiga' }} 
+        />
+        <Stack.Screen 
+          name="DetalhePonto" 
+          component={TelaDetalhePonto} 
+          options={{ title: 'Detalhes do Ponto' }} 
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F4F6F8',
-  },
-});

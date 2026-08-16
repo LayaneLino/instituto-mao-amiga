@@ -1,4 +1,6 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from './App';
 
 export type Ponto = {
   id: string;
@@ -8,7 +10,7 @@ export type Ponto = {
   itensRecebeDistribui: string;
 };
 
-const pontosMock: Ponto[] = [
+export const pontosMock: Ponto[] = [
   {
     id: '1',
     nome: 'Instituto Mão Amiga',
@@ -39,23 +41,29 @@ const pontosMock: Ponto[] = [
   },
 ];
 
-function PontoItem({ ponto }: { ponto: Ponto }) {
+function PontoItem({ ponto, onPress }: { ponto: Ponto; onPress: () => void }) {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <Text style={styles.nomePonto}>{ponto.nome}</Text>
       <Text style={styles.enderecoPonto}>{ponto.endereco}</Text>
       <Text style={styles.itensPonto}>{ponto.itensRecebeDistribui}</Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
-export default function TelaListaPontos() {
+type Props = NativeStackScreenProps<RootStackParamList, 'ListaPontos'>;
+
+export default function TelaListaPontos({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.tituloTela}>Pontos de Coleta</Text>
       
       {pontosMock.map((ponto) => (
-        <PontoItem key={ponto.id} ponto={ponto} />
+        <PontoItem 
+          key={ponto.id} 
+          ponto={ponto} 
+          onPress={() => navigation.navigate('DetalhePonto', { id: ponto.id })} 
+        />
       ))}
     </View>
   );

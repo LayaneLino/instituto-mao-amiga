@@ -1,18 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
-
-export type Ponto = {
-  nome: string;
-  endereco: string;
-  diasHorarios: string;
-  itensRecebeDistribui: string;
-};
-
-const pontoMock: Ponto = {
-    nome: 'Instituto Mão Amiga',
-    endereco: 'Avenida Jamel Cecílio',
-    diasHorarios: 'Segunda a Sexta, das 08h às 18h',
-    itensRecebeDistribui: 'Recebe: Alimentos e roupas.',
-};
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from './App';
+import { type Ponto, pontosMock } from './TelaListaPontos';
 
 function DetalhePonto({ ponto }: { ponto: Ponto }) {
   return (
@@ -25,10 +14,24 @@ function DetalhePonto({ ponto }: { ponto: Ponto }) {
   );
 }
 
-export default function TelaDetalhePonto() {
+type Props = NativeStackScreenProps<RootStackParamList, 'DetalhePonto'>;
+
+export default function TelaDetalhePonto({ route }: Props) {
+  const { id } = route.params;
+  
+  const ponto = pontosMock.find((p) => p.id === id);
+
+  if (!ponto) {
+    return (
+      <View style={styles.screen}>
+        <Text>Ponto não encontrado.</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.screen}>
-      <DetalhePonto ponto={pontoMock} />
+      <DetalhePonto ponto={ponto} />
     </View>
   );
 }
