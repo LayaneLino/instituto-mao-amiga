@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
 
@@ -39,6 +39,34 @@ export const pontosMock: Ponto[] = [
     diasHorarios: 'Sábados, das 12h às 16h',
     itensRecebeDistribui: 'Recebe: Itens de cama, mesa e banho.',
   },
+  { 
+    id: '5', 
+    nome: 'Centro Cultural Oscar Niemeyer', 
+    endereco: 'GO-020', 
+    diasHorarios: 'Terça a Domingo, das 14h às 19h', 
+    itensRecebeDistribui: 'Distribui: Cestas básicas e produtos de higiene pessoal.' 
+  },
+  { 
+    id: '6', 
+    nome: 'Shopping Flamboyant', 
+    endereco: 'Avenida Deputado Jamel Cecílio', 
+    diasHorarios: 'Domingos, das 07h às 13h', 
+    itensRecebeDistribui: 'Distribui: Marmitas prontas e agasalhos.' 
+  },
+  { 
+    id: '7', 
+    nome: 'Shopping Cerrado', 
+    endereco: 'Avenida Anhanguera', 
+    diasHorarios: 'Quartas e Sextas, das 09h às 17h', 
+    itensRecebeDistribui: 'Distribui: Roupas infantis e fraldas.' 
+  },
+  { 
+    id: '8', 
+    nome: 'Shopping Passeio das Águas', 
+    endereco: 'Avenida Perimetral Norte', 
+    diasHorarios: 'Segundas-feiras, das 18h às 21h', 
+    itensRecebeDistribui: 'Distribui: Cobertores e refeições.' 
+  },
 ];
 
 function PontoItem({ ponto, onPress }: { ponto: Ponto; onPress: () => void }) {
@@ -57,14 +85,18 @@ export default function TelaListaPontos({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.tituloTela}>Pontos de Coleta</Text>
-      
-      {pontosMock.map((ponto) => (
-        <PontoItem 
-          key={ponto.id} 
-          ponto={ponto} 
-          onPress={() => navigation.navigate('DetalhePonto', { id: ponto.id })} 
-        />
-      ))}
+      <FlatList
+        data={pontosMock}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <PontoItem 
+            ponto={item} 
+            onPress={() => navigation.navigate('DetalhePonto', { id: item.id })} 
+          />
+        )}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      />
     </View>
   );
 }
