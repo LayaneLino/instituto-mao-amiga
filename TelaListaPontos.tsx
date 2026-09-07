@@ -85,6 +85,14 @@ export default function TelaListaPontos({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.tituloTela}>Pontos de Coleta</Text>
+
+      <TouchableOpacity
+        style={styles.botaoNovaDoacao}
+        onPress={() => navigation.navigate('CadastroDoacao')}
+      >
+        <Text style={styles.textoBotaoNovaDoacao}>Nova Doação</Text>
+      </TouchableOpacity>
+
       <FlatList
         data={pontosMock}
         keyExtractor={(item) => item.id}
@@ -141,5 +149,17 @@ const styles = StyleSheet.create({
     color: '#00796B',
     fontWeight: '600',
     marginTop: 4,
+  },
+  botaoNovaDoacao: {
+    backgroundColor: '#00796B',
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+    textoBotaoNovaDoacao: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
