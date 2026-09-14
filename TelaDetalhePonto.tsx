@@ -1,4 +1,6 @@
-import { View, Text, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
 import { type Ponto, pontosMock } from './TelaListaPontos';
@@ -23,16 +25,18 @@ export default function TelaDetalhePonto({ route }: Props) {
 
   if (!ponto) {
     return (
-      <View style={styles.screen}>
+      <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
         <Text>Ponto não encontrado.</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.screen}>
-      <DetalhePonto ponto={ponto} />
-    </View>
+    <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <DetalhePonto ponto={ponto} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -40,6 +44,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: '#F4F6F8',
+  },
+  scrollContent: {
+    flexGrow: 1,
     padding: 16,
   },
   container: {

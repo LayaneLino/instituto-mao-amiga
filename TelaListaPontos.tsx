@@ -1,4 +1,6 @@
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
 
@@ -83,19 +85,21 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ListaPontos'>;
 
 export default function TelaListaPontos({ navigation }: Props) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.tituloTela}>Pontos de Coleta</Text>
-
-      <TouchableOpacity
-        style={styles.botaoNovaDoacao}
-        onPress={() => navigation.navigate('CadastroDoacao')}
-      >
-        <Text style={styles.textoBotaoNovaDoacao}>Nova Doação</Text>
-      </TouchableOpacity>
-
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <FlatList
         data={pontosMock}
         keyExtractor={(item) => item.id}
+        ListHeaderComponent={
+          <View>
+            <Text style={styles.tituloTela}>Pontos de Coleta</Text>
+            <TouchableOpacity
+              style={styles.botaoNovaDoacao}
+              onPress={() => navigation.navigate('CadastroDoacao')}
+            >
+              <Text style={styles.textoBotaoNovaDoacao}>Nova Doação</Text>
+            </TouchableOpacity>
+          </View>
+        }
         renderItem={({ item }) => (
           <PontoItem 
             ponto={item} 
@@ -105,7 +109,7 @@ export default function TelaListaPontos({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -113,7 +117,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F4F6F8',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   tituloTela: {
     fontSize: 24,
@@ -123,6 +128,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   card: {
+    minHeight: 44,
     backgroundColor: '#FFFFFF',
     padding: 16,
     borderRadius: 8,
@@ -151,13 +157,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   botaoNovaDoacao: {
+    minHeight: 44,
     backgroundColor: '#00796B',
-    padding: 14,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
-    textoBotaoNovaDoacao: {
+  textoBotaoNovaDoacao: {
     color: '#FFF',
     fontWeight: 'bold',
     fontSize: 16,

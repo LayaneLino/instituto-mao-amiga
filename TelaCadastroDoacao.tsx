@@ -1,5 +1,17 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Alert, TouchableWithoutFeedback } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Keyboard, 
+  Alert, 
+  KeyboardAvoidingView, 
+  ScrollView, 
+  Platform 
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
 
@@ -20,12 +32,7 @@ export default function TelaCadastroDoacao({ navigation }: Props) {
     }
 
     const qtdNumerica = Number(quantidade.trim());
-    if (
-      quantidade.trim() === '' ||
-      isNaN(qtdNumerica) ||
-      qtdNumerica <= 0 ||
-      !Number.isInteger(qtdNumerica)
-    ) {
+    if (quantidade.trim() === '' || isNaN(qtdNumerica) || qtdNumerica <= 0 || !Number.isInteger(qtdNumerica)) {
       setErro('A quantidade deve ser um número válido!');
       return;
     }
@@ -49,60 +56,75 @@ export default function TelaCadastroDoacao({ navigation }: Props) {
   }
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <Text style={styles.titulo}>Registrar Doação</Text>
-        <Text style={styles.subtitulo}>Preencha os dados do item doado.</Text>
+    <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
+      <KeyboardAvoidingView 
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.titulo}>Registrar Doação</Text>
+          <Text style={styles.subtitulo}>Preencha os dados do item doado.</Text>
 
-        <View style={styles.formulario}>
-          <Text style={styles.label}>Tipo do Item</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex: Cesta básica, Casaco..."
-            value={tipoItem}
-            onChangeText={setTipoItem}
-            returnKeyType="next"
-            onSubmitEditing={() => inputQuantidadeRef.current?.focus()}
-          />
+          <View style={styles.formulario}>
+            <Text style={styles.label}>Tipo do Item</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: Cesta básica, Casaco..."
+              value={tipoItem}
+              onChangeText={setTipoItem}
+              returnKeyType="next"
+              onSubmitEditing={() => inputQuantidadeRef.current?.focus()}
+            />
 
-          <Text style={styles.label}>Quantidade</Text>
-          <TextInput
-            ref={inputQuantidadeRef}
-            style={styles.input}
-            placeholder="Ex: 5"
-            value={quantidade}
-            onChangeText={setQuantidade}
-            keyboardType="number-pad"
-            returnKeyType="next"
-            onSubmitEditing={() => inputPontoRef.current?.focus()}
-          />
+            <Text style={styles.label}>Quantidade</Text>
+            <TextInput
+              ref={inputQuantidadeRef}
+              style={styles.input}
+              placeholder="Ex: 5"
+              value={quantidade}
+              onChangeText={setQuantidade}
+              keyboardType="number-pad"
+              returnKeyType="next"
+              onSubmitEditing={() => inputPontoRef.current?.focus()}
+            />
 
-          <Text style={styles.label}>Ponto de Destino</Text>
-          <TextInput
-            ref={inputPontoRef}
-            style={styles.input}
-            placeholder="Ex: Instituto Mão Amiga"
-            value={pontoDestino}
-            onChangeText={setPontoDestino}
-            returnKeyType="done"
-            onSubmitEditing={validarFormulario}
-          />
+            <Text style={styles.label}>Ponto de Destino</Text>
+            <TextInput
+              ref={inputPontoRef}
+              style={styles.input}
+              placeholder="Ex: Instituto Mão Amiga"
+              value={pontoDestino}
+              onChangeText={setPontoDestino}
+              returnKeyType="done"
+              onSubmitEditing={validarFormulario}
+            />
 
-          {erro !== '' && <Text style={styles.erro}>{erro}</Text>}
+            {erro !== '' && <Text style={styles.erro}>{erro}</Text>}
 
-          <TouchableOpacity style={styles.botaoSalvar} onPress={validarFormulario}>
-            <Text style={styles.textoBotaoSalvar}>Registrar Doação</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableWithoutFeedback>
+            <TouchableOpacity style={styles.botaoSalvar} onPress={validarFormulario}>
+              <Text style={styles.textoBotaoSalvar}>Registrar Doação</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#F4F6F8',
+  },
+  keyboardContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     padding: 16,
   },
   titulo: {
@@ -134,11 +156,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
+    minHeight: 44,
     borderWidth: 1,
     borderColor: '#E0E0E0',
     backgroundColor: '#FAFAFA',
     borderRadius: 8,
-    padding: 12,
+    paddingHorizontal: 12,
     marginBottom: 16,
     fontSize: 15,
   },
@@ -148,10 +171,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   botaoSalvar: {
+    minHeight: 44,
     backgroundColor: '#00796B',
-    paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 8,
   },
   textoBotaoSalvar: {
