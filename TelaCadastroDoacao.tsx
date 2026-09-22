@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Alert, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Alert, TouchableWithoutFeedback, KeyboardAvoidingView, ScrollView, Platform  } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
@@ -94,7 +95,6 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ListaPontos'>;
 export default function TelaListaPontos({ navigation }: Props) {
   const [favoritos, setFavoritos] = useState<string[]>([]);
 
-  // Carrega os favoritos ao abrir a tela
   useEffect(() => {
     AsyncStorage.getItem(CHAVE_FAVORITOS).then((salvo) => {
       if (salvo) {
