@@ -1,4 +1,6 @@
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
 
@@ -69,19 +71,55 @@ export const pontosMock: Ponto[] = [
   },
 ];
 
-function PontoItem({ ponto, onPress }: { ponto: Ponto; onPress: () => void }) {
+const CHAVE_FAVORITOS = '@mao_amiga:pontos_favoritos';
+
+function PontoItem({ ponto, onPress, isFavorito, onToggleFavorito }: { ponto: Ponto; onPress: () => void; isFavorito: boolean; onToggleFavorito: () => void }) {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
-      <Text style={styles.nomePonto}>{ponto.nome}</Text>
-      <Text style={styles.enderecoPonto}>{ponto.endereco}</Text>
-      <Text style={styles.itensPonto}>{ponto.itensRecebeDistribui}</Text>
-    </TouchableOpacity>
+    <View style={styles.cardContainer}>
+      <TouchableOpacity style={styles.cardContent} onPress={onPress} activeOpacity={0.7}>
+        <Text style={styles.nomePonto}>{ponto.nome}</Text>
+        <Text style={styles.enderecoPonto}>{ponto.endereco}</Text>
+        <Text style={styles.itensPonto}>{ponto.itensRecebeDistribui}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.botaoFavorito} onPress={onToggleFavorito}>
+        <Text style={styles.favoritoTexto}>{isFavorito ? '★' : '☆'}</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ListaPontos'>;
 
 export default function TelaListaPontos({ navigation }: Props) {
+  const [favoritos, setFavoritos] = useState<string[]>([]);
+
+  // Carrega os favoritos ao abrir a tela
+  useEffect(() => {
+    AsyncStorage.getItem(CHAVE_FAVORITOS).then((salvo) => {
+      if (salvo) {
+        try {
+          const arrayParseado = JSON.parse(salvo);
+          if (Array.isArray(arrayParseado)) setFavoritos(arrayParseado);
+        } catch (e) {
+          console.error('Erro ao ler favoritos', e);
+        }
+      }
+    });
+  }, []);
+
+  function alternarFavorito(id: string) {
+    setFavoritos((atual) => {
+      const listaAtual = Array.isArray(atual) ? atual : [];
+      const novo = listaAtual.includes(id)
+        ? listaAtual.filter((favId) => favId !== id)
+        : [...listaAtual, id];
+
+      AsyncStorage.setItem(CHAVE_FAVORITOS, JSON.stringify(novo));
+      return novo;
+    });
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.tituloTela}>Pontos de Coleta</Text>
@@ -97,8 +135,10 @@ export default function TelaListaPontos({ navigation }: Props) {
         data={pontosMock}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <PontoItem 
-            ponto={item} 
+          <PontoItem
+            ponto={item}
+            isFavorito={favoritos.includes(item.id)}
+            onToggleFavorito={() => alternarFavorito(item.id)}
             onPress={() => navigation.navigate('DetalhePonto', { id: item.id })} 
           />
         )}
@@ -122,9 +162,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 8,
   },
-  card: {
+  cardContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 16,
     borderRadius: 8,
     marginBottom: 12,
     elevation: 2,
@@ -132,6 +173,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
+  },
+  cardContent: {
+    flex: 1,
+    padding: 16
   },
   nomePonto: {
     fontSize: 18,
@@ -157,9 +202,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-    textoBotaoNovaDoacao: {
+  textoBotaoNovaDoacao: {
     color: '#FFF',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  botaoFavorito: {
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  favoritoTexto: {
+    fontSize: 24,
+    color: '#FBC02D'
   },
 });

@@ -1,17 +1,44 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Alert, TouchableWithoutFeedback } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CadastroDoacao'>;
+
+const CHAVE_RASCUNHO = '@mao_amiga:rascunho_doacao';
 
 export default function TelaCadastroDoacao({ navigation }: Props) {
   const [tipoItem, setTipoItem] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [pontoDestino, setPontoDestino] = useState('');
   const [erro, setErro] = useState('');
+  const [carregou, setCarregou] = useState(false);
   const inputQuantidadeRef = useRef<TextInput>(null);
   const inputPontoRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem(CHAVE_RASCUNHO).then((salvo) => {
+      if (salvo) {
+        try {
+          const rascunho = JSON.parse(salvo);
+          if (rascunho.tipoItem) setTipoItem(rascunho.tipoItem);
+          if (rascunho.quantidade) setQuantidade(rascunho.quantidade);
+          if (rascunho.pontoDestino) setPontoDestino(rascunho.pontoDestino);
+        } catch (e) {
+          console.error("Erro ao ler rascunho", e);
+        }
+      }
+      setCarregou(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (carregou) {
+      const rascunhoAtual = { tipoItem, quantidade, pontoDestino };
+      AsyncStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(rascunhoAtual));
+    }
+  }, [tipoItem, quantidade, pontoDestino, carregou]);
 
   function validarFormulario() {
     if (tipoItem.trim() === '') {
@@ -46,6 +73,7 @@ export default function TelaCadastroDoacao({ navigation }: Props) {
     setTipoItem('');
     setQuantidade('');
     setPontoDestino('');
+    AsyncStorage.removeItem(CHAVE_RASCUNHO);
   }
 
   return (
