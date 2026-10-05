@@ -1,11 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
+
 import { listarDoacoes, type Doacao } from './doacoesStorage';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const DoacaoItem = React.memo(({ doacao }: { doacao: Doacao }) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -30,7 +30,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'HistoricoDoacoes'>;
 
 export default function TelaHistoricoDoacoes({ navigation }: Props) {
   const [doacoes, setDoacoes] = useState<Doacao[]>([]);
-
+  const [busca, setBusca] = useState('');
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -41,29 +41,60 @@ export default function TelaHistoricoDoacoes({ navigation }: Props) {
     }, [])
   );
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>Você ainda não tem doações registradas.</Text>
-      <TouchableOpacity
-        style={styles.botaoNovaDoacao}
-        onPress={() => navigation.navigate('CadastroDoacao')}
-      >
-        <Text style={styles.textoBotaoNovaDoacao}>Fazer minha primeira doação</Text>
-      </TouchableOpacity>
-    </View>
+  const doacoesFiltradas = doacoes.filter((doacao) =>
+    doacao.tipoItem.toLowerCase().includes(busca.toLowerCase())
   );
 
+  const renderEmptyState = () => {
+    if (busca.trim() !== '') {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            Nenhuma doação encontrada para "{busca}".
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>Você ainda não tem doações registradas.</Text>
+        <TouchableOpacity
+          style={styles.botaoNovaDoacao}
+          onPress={() => navigation.navigate('CadastroDoacao')}
+        >
+          <Text style={styles.textoBotaoNovaDoacao}>Fazer minha primeira doação</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={styles.buscaContainer}>
+        <TextInput
+          style={styles.inputBusca}
+          placeholder="Buscar por tipo de item..."
+          value={busca}
+          onChangeText={setBusca}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
+      </View>
+
       <FlatList
-        data={doacoes}
+        data={doacoesFiltradas}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <DoacaoItem doacao={item} />}
-        contentContainerStyle={doacoes.length === 0 ? styles.listaVazia : styles.listaPreenchida}
+        contentContainerStyle={doacoesFiltradas.length === 0 ? styles.listaVazia : styles.listaPreenchida}
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -72,8 +103,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F4F6F8',
   },
+  buscaContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  inputBusca: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  // RESTANTE DOS ESTILOS
   listaPreenchida: {
     padding: 16,
+    paddingTop: 8,
   },
   listaVazia: {
     flexGrow: 1,
