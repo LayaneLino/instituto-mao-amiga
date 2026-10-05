@@ -51,3 +51,23 @@ export async function excluirDoacao(id: string): Promise<void> {
     throw new Error('Não foi possível excluir a doação.');
   }
 }
+
+export async function obterDoacao(id: string): Promise<Doacao | undefined> {
+  const doacoes = await listarDoacoes();
+  return doacoes.find((d) => d.id === id);
+}
+
+export async function atualizarDoacao(doacaoAtualizada: Doacao): Promise<void> {
+  try {
+    const doacoesAtuais = await listarDoacoes();
+
+    const novaLista = doacoesAtuais.map((doacao) =>
+      doacao.id === doacaoAtualizada.id ? doacaoAtualizada : doacao
+    );
+
+    await AsyncStorage.setItem(CHAVE_DOACOES, JSON.stringify(novaLista));
+  } catch (error) {
+    console.error('Erro ao atualizar a doação:', error);
+    throw new Error('Não foi possível atualizar a doação.');
+  }
+}

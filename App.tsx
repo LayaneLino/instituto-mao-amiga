@@ -6,13 +6,12 @@ import TelaDetalhePonto from './TelaDetalhePonto';
 import TelaCadastroDoacao from './TelaCadastroDoacao';
 import { type Doacao } from './doacoesStorage';
 import TelaDetalheDoacao from './TelaDetalheDoacao';
-
 import TelaHistoricoDoacoes from './TelaHistoricoDoacoes';
 
 export type RootStackParamList = {
   ListaPontos: undefined;
   DetalhePonto: { id: string };
-  CadastroDoacao: undefined;
+  CadastroDoacao: { doacaoToEdit?: Doacao } | undefined;
   HistoricoDoacoes: undefined;
   DetalheDoacao: { doacao: Doacao };
 };
@@ -36,7 +35,9 @@ export default function App() {
         <Stack.Screen
           name="CadastroDoacao"
           component={TelaCadastroDoacao}
-          options={{ title: 'Nova Doação' }}
+          options={({ route }) => ({
+            title: route.params?.doacaoToEdit ? 'Editar Doação' : 'Nova Doação'
+          })}
         />
 
         <Stack.Screen
