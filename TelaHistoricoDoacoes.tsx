@@ -4,12 +4,12 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
-
 import { listarDoacoes, type Doacao } from './doacoesStorage';
 
 const DoacaoItem = React.memo(({ doacao }: { doacao: Doacao }) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const dataFormatada = new Date(doacao.criadoEm).toLocaleDateString('pt-BR');
+  const quantidadeFormatada = doacao.quantidade.toLocaleString('pt-BR');
 
   return (
     <TouchableOpacity
@@ -18,7 +18,9 @@ const DoacaoItem = React.memo(({ doacao }: { doacao: Doacao }) => {
       onPress={() => navigation.navigate('DetalheDoacao', { doacao })}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.tituloItem}>{doacao.quantidade}x {doacao.tipoItem}</Text>
+        <Text style={styles.tituloItem} numberOfLines={2}>
+          {quantidadeFormatada}x {doacao.tipoItem}
+        </Text>
         <Text style={styles.dataItem}>{dataFormatada}</Text>
       </View>
       <Text style={styles.destinoItem}>Destino: {doacao.pontoDestino}</Text>
@@ -75,7 +77,7 @@ export default function TelaHistoricoDoacoes({ navigation }: Props) {
         {dadosResumo.map((item, index) => (
           <Text key={index} style={styles.resumoItem}>
             <Text style={styles.resumoItemNome}>{item.nome}: </Text>
-            {item.quantidade} unidades em {item.contagem} {item.contagem === 1 ? 'doação' : 'doações'}
+            {item.quantidade.toLocaleString('pt-BR')} unidades em {item.contagem} {item.contagem === 1 ? 'doação' : 'doações'}
           </Text>
         ))}
       </View>
@@ -205,10 +207,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1B3A5C',
+    flexShrink: 1,
+    marginRight: 12,
   },
   dataItem: {
     fontSize: 12,
     color: '#999999',
+    flexShrink: 0,
   },
   destinoItem: {
     fontSize: 14,

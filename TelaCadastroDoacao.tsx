@@ -159,6 +159,7 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
               onChangeText={setQuantidade}
               keyboardType="number-pad"
               returnKeyType="done"
+              maxLength={10}
               onSubmitEditing={Keyboard.dismiss}
             />
 
@@ -180,7 +181,7 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
             </TouchableOpacity>
           </View>
 
-          <Modal visible={modalTipoVisivel} transparent={true} animationType="fade" onRequestClose={() => setModalTipoVisivel(false)}>
+          <Modal visible={modalTipoVisivel} transparent={true} animationType="fade" supportedOrientations={['portrait', 'landscape']} onRequestClose={() => setModalTipoVisivel(false)}>
             <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalTipoVisivel(false)}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitulo}>Categoria do Item</Text>
@@ -200,7 +201,7 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
             </TouchableOpacity>
           </Modal>
 
-          <Modal visible={modalPontoVisivel} transparent={true} animationType="fade" onRequestClose={() => setModalPontoVisivel(false)}>
+          <Modal visible={modalPontoVisivel} transparent={true} animationType="fade" supportedOrientations={['portrait', 'landscape']} onRequestClose={() => setModalPontoVisivel(false)}>
             <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalPontoVisivel(false)}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitulo}>Escolha o destino</Text>

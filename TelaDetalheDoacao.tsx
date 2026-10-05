@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
 import { excluirDoacao, obterDoacao, type Doacao } from './doacoesStorage';
@@ -52,44 +53,52 @@ export default function TelaDetalheDoacao({ route, navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.label}>Item Doado</Text>
-        <Text style={styles.valor}>{doacaoAtual.tipoItem}</Text>
-        <View style={styles.linha} />
+    <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.card}>
+          <Text style={styles.label}>Item Doado</Text>
+          <Text style={styles.valor}>{doacaoAtual.tipoItem}</Text>
+          <View style={styles.linha} />
 
-        <Text style={styles.label}>Quantidade</Text>
-        <Text style={styles.valor}>{doacaoAtual.quantidade} unidades</Text>
-        <View style={styles.linha} />
+          <Text style={styles.label}>Quantidade</Text>
+          <Text style={styles.valor}>{doacaoAtual.quantidade.toLocaleString('pt-BR')} unidades</Text>
+          <View style={styles.linha} />
 
-        <Text style={styles.label}>Destino</Text>
-        <Text style={styles.valor}>{doacaoAtual.pontoDestino}</Text>
-        <View style={styles.linha} />
+          <Text style={styles.label}>Destino</Text>
+          <Text style={styles.valor}>{doacaoAtual.pontoDestino}</Text>
+          <View style={styles.linha} />
 
-        <Text style={styles.label}>Data do Registro</Text>
-        <Text style={styles.valor}>{dataFormatada}</Text>
-      </View>
+          <Text style={styles.label}>Data do Registro</Text>
+          <Text style={styles.valor}>{dataFormatada}</Text>
+        </View>
 
-      <View style={styles.botoesContainer}>
-        <TouchableOpacity
-          style={styles.botaoEditar}
-          onPress={() => navigation.navigate('CadastroDoacao', { doacaoToEdit: doacaoAtual })}
-        >
-          <Text style={styles.textoBotaoEditar}>Editar</Text>
-        </TouchableOpacity>
+        <View style={styles.botoesContainer}>
+          <TouchableOpacity
+            style={styles.botaoEditar}
+            onPress={() => navigation.navigate('CadastroDoacao', { doacaoToEdit: doacaoAtual })}
+          >
+            <Text style={styles.textoBotaoEditar}>Editar</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.botaoExcluir} onPress={confirmarExclusao}>
-          <Text style={styles.textoBotaoExcluir}>Excluir</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          <TouchableOpacity style={styles.botaoExcluir} onPress={confirmarExclusao}>
+            <Text style={styles.textoBotaoExcluir}>Excluir</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
     backgroundColor: '#F4F6F8',
+  },
+  scrollContent: {
+    flexGrow: 1,
     padding: 16,
   },
   card: {
@@ -101,28 +110,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
-    marginBottom: 24,
+    marginBottom: 24
   },
   label: {
     fontSize: 13,
     color: '#666666',
     textTransform: 'uppercase',
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 4
   },
   valor: {
     fontSize: 18,
     color: '#1B3A5C',
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
   linha: {
     height: 1,
     backgroundColor: '#EEEEEE',
-    marginVertical: 16,
+    marginVertical: 16
   },
   botoesContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
   },
   botaoEditar: {
     flex: 1,
@@ -130,7 +139,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 8
   },
   textoBotaoEditar: {
     color: '#FFFFFF',
@@ -145,7 +154,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
-    marginLeft: 8,
+    marginLeft: 8
   },
   textoBotaoExcluir: {
     color: '#D32F2F',
