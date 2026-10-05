@@ -31,6 +31,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'HistoricoDoacoes'>;
 export default function TelaHistoricoDoacoes({ navigation }: Props) {
   const [doacoes, setDoacoes] = useState<Doacao[]>([]);
   const [busca, setBusca] = useState('');
+
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -45,24 +46,54 @@ export default function TelaHistoricoDoacoes({ navigation }: Props) {
     doacao.tipoItem.toLowerCase().includes(busca.toLowerCase())
   );
 
+  const gerarResumo = () => {
+    const mapaResumo = new Map<string, { quantidade: number, contagem: number, nome: string }>();
+
+    doacoes.forEach(d => {
+      const chave = d.tipoItem.trim().toLowerCase();
+
+      if (!mapaResumo.has(chave)) {
+        mapaResumo.set(chave, { quantidade: 0, contagem: 0, nome: d.tipoItem.trim() });
+      }
+
+      const atual = mapaResumo.get(chave)!;
+      atual.quantidade += d.quantidade;
+      atual.contagem += 1;
+    });
+
+    return Array.from(mapaResumo.values()).sort((a, b) => b.quantidade - a.quantidade);
+  };
+
+  const dadosResumo = gerarResumo();
+
+  const renderResumo = () => {
+    if (dadosResumo.length === 0) return null;
+
+    return (
+      <View style={styles.resumoContainer}>
+        <Text style={styles.resumoTitulo}>Resumo Geral de Doações</Text>
+        {dadosResumo.map((item, index) => (
+          <Text key={index} style={styles.resumoItem}>
+            <Text style={styles.resumoItemNome}>{item.nome}: </Text>
+            {item.quantidade} unidades em {item.contagem} {item.contagem === 1 ? 'doação' : 'doações'}
+          </Text>
+        ))}
+      </View>
+    );
+  };
+
   const renderEmptyState = () => {
     if (busca.trim() !== '') {
       return (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            Nenhuma doação encontrada para "{busca}".
-          </Text>
+        <View style={[styles.emptyContainer, { marginTop: 40 }]}>
+          <Text style={styles.emptyText}>Nenhuma doação encontrada para "{busca}".</Text>
         </View>
       );
     }
-
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>Você ainda não tem doações registradas.</Text>
-        <TouchableOpacity
-          style={styles.botaoNovaDoacao}
-          onPress={() => navigation.navigate('CadastroDoacao')}
-        >
+        <TouchableOpacity style={styles.botaoNovaDoacao} onPress={() => navigation.navigate('CadastroDoacao')}>
           <Text style={styles.textoBotaoNovaDoacao}>Fazer minha primeira doação</Text>
         </TouchableOpacity>
       </View>
@@ -70,10 +101,7 @@ export default function TelaHistoricoDoacoes({ navigation }: Props) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.buscaContainer}>
         <TextInput
           style={styles.inputBusca}
@@ -88,8 +116,9 @@ export default function TelaHistoricoDoacoes({ navigation }: Props) {
       <FlatList
         data={doacoesFiltradas}
         keyExtractor={(item) => item.id}
+        ListHeaderComponent={renderResumo}
         renderItem={({ item }) => <DoacaoItem doacao={item} />}
-        contentContainerStyle={doacoesFiltradas.length === 0 ? styles.listaVazia : styles.listaPreenchida}
+        contentContainerStyle={doacoes.length === 0 ? styles.listaVazia : styles.listaPreenchida}
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -121,7 +150,31 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
   },
-  // RESTANTE DOS ESTILOS
+
+  resumoContainer: {
+    backgroundColor: '#E0F2F1',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#B2DFDB',
+  },
+  resumoTitulo: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#004D40',
+    marginBottom: 8,
+  },
+  resumoItem: {
+    fontSize: 14,
+    color: '#00695C',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  resumoItemNome: {
+    fontWeight: 'bold',
+  },
+
   listaPreenchida: {
     padding: 16,
     paddingTop: 8,

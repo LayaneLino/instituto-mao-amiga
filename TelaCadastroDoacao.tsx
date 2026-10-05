@@ -10,16 +10,32 @@ type Props = NativeStackScreenProps<RootStackParamList, 'CadastroDoacao'>;
 
 const CHAVE_RASCUNHO = '@mao_amiga:rascunho_doacao';
 
+const tiposItensMock = [
+  'Cesta Básica',
+  'Alimentos Não Perecíveis',
+  'Marmitas / Refeições Prontas',
+  'Roupas e Agasalhos',
+  'Roupas, Itens e Acessórios Infantis',
+  'Calçados',
+  'Cobertores',
+  'Cama, Mesa e Banho',
+  'Produtos de Higiene Pessoal',
+  'Brinquedos',
+  'Materiais Escolares',
+  'Móveis / Eletrodomésticos',
+  'Outros'
+];
+
 export default function TelaCadastroDoacao({ route, navigation }: Props) {
   const doacaoParaEditar = route.params?.doacaoToEdit;
   const isEdicao = !!doacaoParaEditar;
   const [tipoItem, setTipoItem] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [pontoDestino, setPontoDestino] = useState('');
-  const [modalVisivel, setModalVisivel] = useState(false);
+  const [modalTipoVisivel, setModalTipoVisivel] = useState(false);
+  const [modalPontoVisivel, setModalPontoVisivel] = useState(false);
   const [erro, setErro] = useState('');
   const [carregou, setCarregou] = useState(false);
-  const inputQuantidadeRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (isEdicao && doacaoParaEditar) {
@@ -50,14 +66,21 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
   }, [tipoItem, quantidade, pontoDestino, carregou, isEdicao]);
 
   async function validarFormulario() {
-    if (tipoItem.trim() === '') { setErro('O tipo do item não pode ficar vazio!'); return; }
+    if (tipoItem === '') {
+      setErro('Por favor, selecione o tipo do item!');
+      return;
+    }
 
     const qtdNumerica = Number(quantidade.trim());
     if (quantidade.trim() === '' || isNaN(qtdNumerica) || qtdNumerica <= 0 || !Number.isInteger(qtdNumerica)) {
-      setErro('A quantidade deve ser um número válido!'); return;
+      setErro('A quantidade deve ser um número válido!');
+      return;
     }
 
-    if (pontoDestino === '') { setErro('Por favor, selecione um ponto de destino!'); return; }
+    if (pontoDestino === '') {
+      setErro('Por favor, selecione um ponto de destino!');
+      return;
+    }
 
     setErro('');
     Keyboard.dismiss();
@@ -66,12 +89,12 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
       if (isEdicao && doacaoParaEditar) {
         await atualizarDoacao({
           ...doacaoParaEditar,
-          tipoItem: tipoItem.trim(),
+          tipoItem: tipoItem,
           quantidade: qtdNumerica,
           pontoDestino: pontoDestino,
         });
 
-        const msgEdicao = `Doação de ${qtdNumerica}x ${tipoItem.trim()} atualizada com sucesso!`;
+        const msgEdicao = `Doação de ${qtdNumerica}x ${tipoItem} atualizada com sucesso!`;
         if (Platform.OS === 'web') {
           window.alert('Sucesso!\n\n' + msgEdicao);
           navigation.goBack();
@@ -81,7 +104,7 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
 
       } else {
         await salvarDoacao({
-          tipoItem: tipoItem.trim(),
+          tipoItem: tipoItem,
           quantidade: qtdNumerica,
           pontoDestino: pontoDestino,
         });
@@ -116,19 +139,20 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
           <Text style={styles.subtitulo}>Preencha os dados do item doado.</Text>
 
           <View style={styles.formulario}>
+
             <Text style={styles.label}>Tipo do Item</Text>
-            <TextInput
+            <TouchableOpacity
               style={styles.input}
-              placeholder="Ex: Cesta básica, Casaco..."
-              value={tipoItem}
-              onChangeText={setTipoItem}
-              returnKeyType="next"
-              onSubmitEditing={() => inputQuantidadeRef.current?.focus()}
-            />
+              activeOpacity={0.7}
+              onPress={() => { Keyboard.dismiss(); setModalTipoVisivel(true); }}
+            >
+              <Text style={{ color: tipoItem ? '#333' : '#999', fontSize: 15 }}>
+                {tipoItem ? tipoItem : 'Selecione a categoria...'}
+              </Text>
+            </TouchableOpacity>
 
             <Text style={styles.label}>Quantidade</Text>
             <TextInput
-              ref={inputQuantidadeRef}
               style={styles.input}
               placeholder="Ex: 5"
               value={quantidade}
@@ -139,11 +163,10 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
             />
 
             <Text style={styles.label}>Ponto de Destino</Text>
-
             <TouchableOpacity
               style={styles.input}
               activeOpacity={0.7}
-              onPress={() => { Keyboard.dismiss(); setModalVisivel(true); }}
+              onPress={() => { Keyboard.dismiss(); setModalPontoVisivel(true); }}
             >
               <Text style={{ color: pontoDestino ? '#333' : '#999', fontSize: 15 }}>
                 {pontoDestino ? pontoDestino : 'Selecione um ponto...'}
@@ -157,20 +180,40 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
             </TouchableOpacity>
           </View>
 
-          <Modal visible={modalVisivel} transparent={true} animationType="fade" onRequestClose={() => setModalVisivel(false)}>
-            <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisivel(false)}>
+          <Modal visible={modalTipoVisivel} transparent={true} animationType="fade" onRequestClose={() => setModalTipoVisivel(false)}>
+            <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalTipoVisivel(false)}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitulo}>Categoria do Item</Text>
+                <FlatList
+                  data={tiposItensMock}
+                  keyExtractor={(item) => item}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity style={styles.modalItem} onPress={() => { setTipoItem(item); setModalTipoVisivel(false); }}>
+                      <Text style={styles.modalItemTexto}>{item}</Text>
+                    </TouchableOpacity>
+                  )}
+                />
+                <TouchableOpacity style={styles.modalBotaoFechar} onPress={() => setModalTipoVisivel(false)}>
+                  <Text style={styles.modalBotaoFecharTexto}>Cancelar</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+
+          <Modal visible={modalPontoVisivel} transparent={true} animationType="fade" onRequestClose={() => setModalPontoVisivel(false)}>
+            <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalPontoVisivel(false)}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitulo}>Escolha o destino</Text>
                 <FlatList
                   data={pontosMock}
                   keyExtractor={(item) => item.id}
                   renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.modalItem} onPress={() => { setPontoDestino(item.nome); setModalVisivel(false); }}>
+                    <TouchableOpacity style={styles.modalItem} onPress={() => { setPontoDestino(item.nome); setModalPontoVisivel(false); }}>
                       <Text style={styles.modalItemTexto}>{item.nome}</Text>
                     </TouchableOpacity>
                   )}
                 />
-                <TouchableOpacity style={styles.modalBotaoFechar} onPress={() => setModalVisivel(false)}>
+                <TouchableOpacity style={styles.modalBotaoFechar} onPress={() => setModalPontoVisivel(false)}>
                   <Text style={styles.modalBotaoFecharTexto}>Cancelar</Text>
                 </TouchableOpacity>
               </View>
