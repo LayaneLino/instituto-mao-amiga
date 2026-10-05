@@ -38,3 +38,16 @@ export async function salvarDoacao(novaDoacao: Omit<Doacao, 'id' | 'criadoEm'>):
     throw new Error('Não foi possível salvar a doação.');
   }
 }
+
+export async function excluirDoacao(id: string): Promise<void> {
+  try {
+    const doacoesAtuais = await listarDoacoes();
+
+    const novaLista = doacoesAtuais.filter((doacao) => doacao.id !== id);
+
+    await AsyncStorage.setItem(CHAVE_DOACOES, JSON.stringify(novaLista));
+  } catch (error) {
+    console.error('Erro ao excluir a doação:', error);
+    throw new Error('Não foi possível excluir a doação.');
+  }
+}

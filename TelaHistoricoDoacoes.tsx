@@ -4,18 +4,25 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
 import { listarDoacoes, type Doacao } from './doacoesStorage';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const DoacaoItem = React.memo(({ doacao }: { doacao: Doacao }) => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const dataFormatada = new Date(doacao.criadoEm).toLocaleDateString('pt-BR');
 
   return (
-    <View style={styles.cardItem}>
+    <TouchableOpacity
+      style={styles.cardItem}
+      activeOpacity={0.7}
+      onPress={() => navigation.navigate('DetalheDoacao', { doacao })}
+    >
       <View style={styles.cardHeader}>
         <Text style={styles.tituloItem}>{doacao.quantidade}x {doacao.tipoItem}</Text>
         <Text style={styles.dataItem}>{dataFormatada}</Text>
       </View>
       <Text style={styles.destinoItem}>Destino: {doacao.pontoDestino}</Text>
-    </View>
+    </TouchableOpacity>
   );
 });
 
