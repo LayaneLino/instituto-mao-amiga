@@ -5,10 +5,13 @@ import TelaListaPontos from './TelaListaPontos';
 import TelaDetalhePonto from './TelaDetalhePonto';
 import TelaCadastroDoacao from './TelaCadastroDoacao';
 
+import TelaHistoricoDoacoes from './TelaHistoricoDoacoes';
+
 export type RootStackParamList = {
   ListaPontos: undefined;
   DetalhePonto: { id: string };
   CadastroDoacao: undefined;
+  HistoricoDoacoes: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -17,21 +20,28 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="ListaPontos" screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
-        <Stack.Screen 
-          name="ListaPontos" 
-          component={TelaListaPontos} 
-          options={{ title: 'Instituto Mão Amiga' }} 
+        <Stack.Screen
+          name="ListaPontos"
+          component={TelaListaPontos}
+          options={{ title: 'Instituto Mão Amiga' }}
         />
-        <Stack.Screen 
-          name="DetalhePonto" 
-          component={TelaDetalhePonto} 
-          options={{ title: 'Detalhes do Ponto' }} 
+        <Stack.Screen
+          name="DetalhePonto"
+          component={TelaDetalhePonto}
+          options={{ title: 'Detalhes do Ponto' }}
         />
         <Stack.Screen
           name="CadastroDoacao"
           component={TelaCadastroDoacao}
           options={{ title: 'Nova Doação' }}
         />
+
+        <Stack.Screen
+          name="HistoricoDoacoes"
+          component={TelaHistoricoDoacoes}
+          options={{ title: 'Minhas Doações' }}
+        />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

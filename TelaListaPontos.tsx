@@ -124,12 +124,21 @@ export default function TelaListaPontos({ navigation }: Props) {
     <View style={styles.container}>
       <Text style={styles.tituloTela}>Pontos de Coleta</Text>
 
-      <TouchableOpacity
-        style={styles.botaoNovaDoacao}
-        onPress={() => navigation.navigate('CadastroDoacao')}
-      >
-        <Text style={styles.textoBotaoNovaDoacao}>Nova Doação</Text>
-      </TouchableOpacity>
+      <View style={styles.botoesHeader}>
+        <TouchableOpacity
+          style={[styles.botaoHeader, styles.botaoHistorico]}
+          onPress={() => navigation.navigate('HistoricoDoacoes')}
+        >
+          <Text style={styles.textoBotaoHistorico}>Meu Histórico</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.botaoHeader, styles.botaoDoar]}
+          onPress={() => navigation.navigate('CadastroDoacao')}
+        >
+          <Text style={styles.textoBotaoNovaDoacao}>Nova Doação</Text>
+        </TouchableOpacity>
+      </View>
 
       <FlatList
         data={pontosMock}
@@ -195,12 +204,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4,
   },
-  botaoNovaDoacao: {
-    backgroundColor: '#00796B',
+  botoesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  botaoHeader: {
+    flex: 1,
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 16,
+  },
+  botaoHistorico: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#00796B',
+    marginRight: 8,
+  },
+  botaoDoar: {
+    backgroundColor: '#00796B',
+    marginLeft: 8,
+  },
+  textoBotaoHistorico: {
+    color: '#00796B',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  textoBotaoNovaDoacao: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
   textoBotaoNovaDoacao: {
     color: '#FFF',
