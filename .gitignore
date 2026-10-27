@@ -48,3 +48,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# API Spring Boot (pasta api/)
+api/target/
+api/.mvn/wrapper/maven-wrapper.jar
+*.class

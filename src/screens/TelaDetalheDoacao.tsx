@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from './App';
-import { excluirDoacao, obterDoacao, type Doacao } from './doacoesStorage';
+import type { RootStackParamList } from '../types/navigation';
+import type { Doacao } from '../types/doacao';
+import { excluirDoacao, obterDoacao } from '../services/doacoesStorage';
+import { confirmarAcao, mostrarAlerta } from '../utils/alerta';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DetalheDoacao'>;
 
@@ -30,26 +32,13 @@ export default function TelaDetalheDoacao({ route, navigation }: Props) {
     try {
       await excluirDoacao(doacaoAtual.id);
       navigation.goBack();
-    } catch (error) {
-      if (Platform.OS === 'web') window.alert('Erro ao excluir a doação.');
-      else Alert.alert('Erro', 'Não foi possível excluir a doação.');
+    } catch {
+      mostrarAlerta('Erro', 'Não foi possível excluir a doação.');
     }
   };
 
   const confirmarExclusao = () => {
-    if (Platform.OS === 'web') {
-      const confirmado = window.confirm('Tem certeza que deseja excluir esta doação?');
-      if (confirmado) executarExclusao();
-    } else {
-      Alert.alert(
-        'Excluir Doação',
-        'Tem certeza que deseja excluir?',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Excluir', style: 'destructive', onPress: executarExclusao }
-        ]
-      );
-    }
+    confirmarAcao('Excluir Doação', 'Tem certeza que deseja excluir esta doação?', 'Excluir', executarExclusao);
   };
 
   return (

@@ -1,30 +1,15 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Alert, Modal, FlatList, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Modal, FlatList, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from './App';
-import { salvarDoacao, atualizarDoacao } from './doacoesStorage';
-import { pontosMock } from './TelaListaPontos';
+import type { RootStackParamList } from '../types/navigation';
+import type { Ponto } from '../types/ponto';
+import { salvarDoacao, atualizarDoacao } from '../services/doacoesStorage';
+import { carregarRascunho, salvarRascunho, limparRascunho } from '../services/rascunhoStorage';
+import { listarTodosPontos } from '../services/pontosService';
+import { tiposItens } from '../constants/tiposItens';
+import { mostrarAlerta } from '../utils/alerta';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CadastroDoacao'>;
-
-const CHAVE_RASCUNHO = '@mao_amiga:rascunho_doacao';
-
-const tiposItensMock = [
-  'Cesta Básica',
-  'Alimentos Não Perecíveis',
-  'Marmitas / Refeições Prontas',
-  'Roupas e Agasalhos',
-  'Roupas, Itens e Acessórios Infantis',
-  'Calçados',
-  'Cobertores',
-  'Cama, Mesa e Banho',
-  'Produtos de Higiene Pessoal',
-  'Brinquedos',
-  'Materiais Escolares',
-  'Móveis / Eletrodomésticos',
-  'Outros'
-];
 
 export default function TelaCadastroDoacao({ route, navigation }: Props) {
   const doacaoParaEditar = route.params?.doacaoToEdit;
@@ -36,46 +21,72 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
   const [modalPontoVisivel, setModalPontoVisivel] = useState(false);
   const [erro, setErro] = useState('');
   const [carregou, setCarregou] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const salvandoRef = useRef(false); // trava síncrona: o state demora um render para valer
+
+  const [pontos, setPontos] = useState<Ponto[]>([]);
+  const [carregandoPontos, setCarregandoPontos] = useState(true);
+  const [erroPontos, setErroPontos] = useState('');
+
+  const carregarPontos = useCallback(async () => {
+    setCarregandoPontos(true);
+    setErroPontos('');
+    try {
+      setPontos(await listarTodosPontos());
+    } catch {
+      setErroPontos('Não foi possível carregar os pontos de destino. Verifique se a API está no ar.');
+    } finally {
+      setCarregandoPontos(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (isEdicao && doacaoParaEditar) {
+    carregarPontos();
+  }, [carregarPontos]);
+
+  useEffect(() => {
+    if (doacaoParaEditar) {
       setTipoItem(doacaoParaEditar.tipoItem);
       setQuantidade(doacaoParaEditar.quantidade.toString());
       setPontoDestino(doacaoParaEditar.pontoDestino);
       setCarregou(true);
-    } else {
-      AsyncStorage.getItem(CHAVE_RASCUNHO).then((salvo) => {
-        if (salvo) {
-          try {
-            const rascunho = JSON.parse(salvo);
-            if (rascunho.tipoItem) setTipoItem(rascunho.tipoItem);
-            if (rascunho.quantidade) setQuantidade(rascunho.quantidade);
-            if (rascunho.pontoDestino) setPontoDestino(rascunho.pontoDestino);
-          } catch (e) { console.error("Erro ao ler rascunho", e); }
-        }
-        setCarregou(true);
-      });
+      return;
     }
-  }, [isEdicao, doacaoParaEditar]);
+
+    let ativo = true;
+    carregarRascunho().then((rascunho) => {
+      if (!ativo) return;
+      if (rascunho) {
+        if (rascunho.tipoItem) setTipoItem(rascunho.tipoItem);
+        if (rascunho.quantidade) setQuantidade(rascunho.quantidade);
+        if (rascunho.pontoDestino) setPontoDestino(rascunho.pontoDestino);
+      }
+      setCarregou(true);
+    });
+    return () => { ativo = false; };
+  }, [doacaoParaEditar]);
 
   useEffect(() => {
     if (carregou && !isEdicao) {
-      const rascunhoAtual = { tipoItem, quantidade, pontoDestino };
-      AsyncStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(rascunhoAtual));
+      salvarRascunho({ tipoItem, quantidade, pontoDestino });
     }
   }, [tipoItem, quantidade, pontoDestino, carregou, isEdicao]);
 
   async function validarFormulario() {
+    if (salvandoRef.current) return;
+
     if (tipoItem === '') {
       setErro('Por favor, selecione o tipo do item!');
       return;
     }
 
-    const qtdNumerica = Number(quantidade.trim());
-    if (quantidade.trim() === '' || isNaN(qtdNumerica) || qtdNumerica <= 0 || !Number.isInteger(qtdNumerica)) {
-      setErro('A quantidade deve ser um número válido!');
+    // Só dígitos: rejeita "1e3", "0x10", "-5", "2.5", etc.
+    const qtdTexto = quantidade.trim();
+    if (!/^\d+$/.test(qtdTexto) || Number(qtdTexto) <= 0) {
+      setErro('A quantidade deve ser um número inteiro maior que zero!');
       return;
     }
+    const qtdNumerica = Number(qtdTexto);
 
     if (pontoDestino === '') {
       setErro('Por favor, selecione um ponto de destino!');
@@ -84,51 +95,65 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
 
     setErro('');
     Keyboard.dismiss();
+    salvandoRef.current = true;
+    setSalvando(true);
 
     try {
-      if (isEdicao && doacaoParaEditar) {
+      if (doacaoParaEditar) {
         await atualizarDoacao({
           ...doacaoParaEditar,
           tipoItem: tipoItem,
           quantidade: qtdNumerica,
           pontoDestino: pontoDestino,
         });
-
-        const msgEdicao = `Doação de ${qtdNumerica}x ${tipoItem} atualizada com sucesso!`;
-        if (Platform.OS === 'web') {
-          window.alert('Sucesso!\n\n' + msgEdicao);
-          navigation.goBack();
-        } else {
-          Alert.alert('Sucesso!', msgEdicao, [{ text: 'OK', onPress: () => navigation.goBack() }]);
-        }
-
+        mostrarAlerta('Sucesso!', `Doação de ${qtdNumerica}x ${tipoItem} atualizada com sucesso!`, () => navigation.goBack());
       } else {
         await salvarDoacao({
           tipoItem: tipoItem,
           quantidade: qtdNumerica,
           pontoDestino: pontoDestino,
         });
-
-        setTipoItem(''); setQuantidade(''); setPontoDestino('');
-        await AsyncStorage.removeItem(CHAVE_RASCUNHO);
-
-        const msgCriacao = `Doação registrada no histórico!`;
-        if (Platform.OS === 'web') {
-          window.alert('Sucesso!\n\n' + msgCriacao);
-          navigation.goBack();
-        } else {
-          Alert.alert('Sucesso!', msgCriacao, [{ text: 'OK', onPress: () => navigation.goBack() }]);
-        }
+        await limparRascunho();
+        mostrarAlerta('Sucesso!', 'Doação registrada no histórico!', () => navigation.goBack());
       }
-    } catch (e) {
-      const msgErro = isEdicao ? 'Erro ao atualizar a doação.' : 'Erro ao salvar sua doação.';
-      if (Platform.OS === 'web') window.alert('Erro: ' + msgErro);
-      else setErro(msgErro);
+    } catch {
+      setErro(isEdicao ? 'Erro ao atualizar a doação.' : 'Erro ao salvar sua doação.');
+    } finally {
+      salvandoRef.current = false;
+      setSalvando(false);
     }
   }
 
   const tituloTela = isEdicao ? 'Editar Doação' : 'Registrar Doação';
   const textoBotao = isEdicao ? 'Salvar Alterações' : 'Registrar Doação';
+
+  function renderListaPontos() {
+    if (carregandoPontos) {
+      return <ActivityIndicator size="large" color="#00796B" style={styles.modalStatus} />;
+    }
+    if (erroPontos !== '') {
+      return (
+        <View style={styles.modalStatus}>
+          <Text style={styles.modalErroTexto}>{erroPontos}</Text>
+          <TouchableOpacity style={styles.botaoTentar} onPress={carregarPontos}>
+            <Text style={styles.textoBotaoTentar}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return (
+      <FlatList
+        data={pontos}
+        keyExtractor={(item) => String(item.id)}
+        ListEmptyComponent={<Text style={styles.modalErroTexto}>Nenhum ponto cadastrado.</Text>}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.modalItem} onPress={() => { setPontoDestino(item.nome); setModalPontoVisivel(false); }}>
+            <Text style={styles.modalItemTexto}>{item.nome}</Text>
+          </TouchableOpacity>
+        )}
+      />
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -176,7 +201,11 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
 
             {erro !== '' && <Text style={styles.erro}>{erro}</Text>}
 
-            <TouchableOpacity style={styles.botaoSalvar} onPress={validarFormulario}>
+            <TouchableOpacity
+              style={[styles.botaoSalvar, salvando && styles.botaoSalvarDesabilitado]}
+              onPress={validarFormulario}
+              disabled={salvando}
+            >
               <Text style={styles.textoBotaoSalvar}>{textoBotao}</Text>
             </TouchableOpacity>
           </View>
@@ -186,7 +215,7 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitulo}>Categoria do Item</Text>
                 <FlatList
-                  data={tiposItensMock}
+                  data={tiposItens}
                   keyExtractor={(item) => item}
                   renderItem={({ item }) => (
                     <TouchableOpacity style={styles.modalItem} onPress={() => { setTipoItem(item); setModalTipoVisivel(false); }}>
@@ -205,15 +234,7 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
             <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalPontoVisivel(false)}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitulo}>Escolha o destino</Text>
-                <FlatList
-                  data={pontosMock}
-                  keyExtractor={(item) => item.id}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.modalItem} onPress={() => { setPontoDestino(item.nome); setModalPontoVisivel(false); }}>
-                      <Text style={styles.modalItemTexto}>{item.nome}</Text>
-                    </TouchableOpacity>
-                  )}
-                />
+                {renderListaPontos()}
                 <TouchableOpacity style={styles.modalBotaoFechar} onPress={() => setModalPontoVisivel(false)}>
                   <Text style={styles.modalBotaoFecharTexto}>Cancelar</Text>
                 </TouchableOpacity>
@@ -324,5 +345,37 @@ const styles = StyleSheet.create({
     color: '#D32F2F',
     fontWeight: 'bold',
     fontSize: 16,
-  }
+  },
+  botaoTentar: {
+    backgroundColor: '#00796B',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  textoBotaoTentar: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  erroTexto: {
+    color: '#D32F2F',
+    fontWeight: '500',
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  botaoSalvarDesabilitado: {
+    opacity: 0.6,
+  },
+  modalStatus: {
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  modalErroTexto: {
+    color: '#D32F2F',
+    fontWeight: '500',
+    fontSize: 15,
+    textAlign: 'center',
+  },
 });

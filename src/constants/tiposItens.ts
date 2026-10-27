@@ -1,0 +1,15 @@
+export const tiposItens: string[] = [
+  'Cesta Básica',
+  'Alimentos Não Perecíveis',
+  'Marmitas / Refeições Prontas',
+  'Roupas e Agasalhos',
+  'Roupas, Itens e Acessórios Infantis',
+  'Calçados',
+  'Cobertores',
+  'Cama, Mesa e Banho',
+  'Produtos de Higiene Pessoal',
+  'Brinquedos',
+  'Materiais Escolares',
+  'Móveis / Eletrodomésticos',
+  'Outros',
+];

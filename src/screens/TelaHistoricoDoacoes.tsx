@@ -1,10 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from './App';
-import { listarDoacoes, type Doacao } from './doacoesStorage';
+import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../types/navigation';
+import type { Doacao } from '../types/doacao';
+import { listarDoacoes } from '../services/doacoesStorage';
 
 const DoacaoItem = React.memo(({ doacao }: { doacao: Doacao }) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -28,6 +28,26 @@ const DoacaoItem = React.memo(({ doacao }: { doacao: Doacao }) => {
   );
 });
 
+type ResumoItem = { chave: string; nome: string; quantidade: number; contagem: number };
+
+function ordenarPorDataDesc(lista: Doacao[]): Doacao[] {
+  return [...lista].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
+}
+
+function gerarResumo(doacoes: Doacao[]): ResumoItem[] {
+  const mapaResumo = new Map<string, ResumoItem>();
+
+  doacoes.forEach((d) => {
+    const chave = d.tipoItem.trim().toLowerCase();
+    const atual = mapaResumo.get(chave) ?? { chave, nome: d.tipoItem.trim(), quantidade: 0, contagem: 0 };
+    atual.quantidade += d.quantidade;
+    atual.contagem += 1;
+    mapaResumo.set(chave, atual);
+  });
+
+  return Array.from(mapaResumo.values()).sort((a, b) => b.quantidade - a.quantidade);
+}
+
 type Props = NativeStackScreenProps<RootStackParamList, 'HistoricoDoacoes'>;
 
 export default function TelaHistoricoDoacoes({ navigation }: Props) {
@@ -38,35 +58,18 @@ export default function TelaHistoricoDoacoes({ navigation }: Props) {
     useCallback(() => {
       let isActive = true;
       listarDoacoes().then((dados) => {
-        if (isActive) setDoacoes(dados.reverse());
+        if (isActive) setDoacoes(ordenarPorDataDesc(dados));
       });
       return () => { isActive = false; };
     }, [])
   );
 
-  const doacoesFiltradas = doacoes.filter((doacao) =>
-    doacao.tipoItem.toLowerCase().includes(busca.toLowerCase())
+  // Estado derivado: calculado a partir de `doacoes`, sem guardar cópias.
+  const doacoesFiltradas = useMemo(
+    () => doacoes.filter((d) => d.tipoItem.toLowerCase().includes(busca.toLowerCase())),
+    [doacoes, busca]
   );
-
-  const gerarResumo = () => {
-    const mapaResumo = new Map<string, { quantidade: number, contagem: number, nome: string }>();
-
-    doacoes.forEach(d => {
-      const chave = d.tipoItem.trim().toLowerCase();
-
-      if (!mapaResumo.has(chave)) {
-        mapaResumo.set(chave, { quantidade: 0, contagem: 0, nome: d.tipoItem.trim() });
-      }
-
-      const atual = mapaResumo.get(chave)!;
-      atual.quantidade += d.quantidade;
-      atual.contagem += 1;
-    });
-
-    return Array.from(mapaResumo.values()).sort((a, b) => b.quantidade - a.quantidade);
-  };
-
-  const dadosResumo = gerarResumo();
+  const dadosResumo = useMemo(() => gerarResumo(doacoes), [doacoes]);
 
   const renderResumo = () => {
     if (dadosResumo.length === 0) return null;
@@ -74,8 +77,8 @@ export default function TelaHistoricoDoacoes({ navigation }: Props) {
     return (
       <View style={styles.resumoContainer}>
         <Text style={styles.resumoTitulo}>Resumo Geral de Doações</Text>
-        {dadosResumo.map((item, index) => (
-          <Text key={index} style={styles.resumoItem}>
+        {dadosResumo.map((item) => (
+          <Text key={item.chave} style={styles.resumoItem}>
             <Text style={styles.resumoItemNome}>{item.nome}: </Text>
             {item.quantidade.toLocaleString('pt-BR')} unidades em {item.contagem} {item.contagem === 1 ? 'doação' : 'doações'}
           </Text>
