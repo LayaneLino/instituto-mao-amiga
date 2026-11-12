@@ -1,19 +1,15 @@
 package br.com.maoamiga.api.config;
 
-import java.util.List;
-
-import br.com.maoamiga.api.ponto.Ponto;
-import br.com.maoamiga.api.ponto.PontoRepository;
-
+import br.com.maoamiga.api.entity.Ponto;
+import br.com.maoamiga.api.repository.PontoRepository;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * Carga inicial dos pontos de Goiânia. Roda na subida da aplicação, só se a tabela estiver vazia.
- *
- * ATENÇÃO: as coordenadas abaixo são aproximadas. Antes de entregar, confira cada uma no
- * Google Maps (clique com o botão direito sobre o local e copie "latitude, longitude") e corrija.
  */
 @Component
 public class CargaInicial implements ApplicationRunner {
@@ -31,38 +27,62 @@ public class CargaInicial implements ApplicationRunner {
         }
 
         repository.saveAll(List.of(
-                new Ponto("Instituto Mão Amiga", "Avenida Jamel Cecílio",
-                        "Segunda a Sexta, das 08h às 18h",
-                        "Recebe: Alimentos e roupas.",
-                        -16.7064, -49.2417),
-                new Ponto("Fatesg", "Rua 227a",
-                        "Segunda a Sexta, das 08h às 21h",
-                        "Recebe: Brinquedos e materiais escolares.",
-                        -16.6726, -49.2453),
-                new Ponto("Sesi Multiparque", "Avenida João Leite",
-                        "Sábados, das 08h às 12h",
-                        "Recebe: Móveis/eletrodomésticos e sapatos.",
-                        -16.6339, -49.2888),
-                new Ponto("Casa da Indústria", "Avenida Araguaia",
-                        "Sábados, das 12h às 16h",
-                        "Recebe: Itens de cama, mesa e banho.",
-                        -16.6748, -49.2569),
-                new Ponto("Centro Cultural Oscar Niemeyer", "GO-020",
-                        "Terça a Domingo, das 14h às 19h",
-                        "Distribui: Cestas básicas e produtos de higiene pessoal.",
-                        -16.6580, -49.2160),
-                new Ponto("Shopping Flamboyant", "Avenida Deputado Jamel Cecílio",
-                        "Domingos, das 07h às 13h",
-                        "Distribui: Marmitas prontas e agasalhos.",
-                        -16.7106, -49.2367),
-                new Ponto("Shopping Cerrado", "Avenida Anhanguera",
-                        "Quartas e Sextas, das 09h às 17h",
-                        "Distribui: Roupas infantis e fraldas.",
-                        -16.6563, -49.3037),
-                new Ponto("Shopping Passeio das Águas", "Avenida Perimetral Norte",
-                        "Segundas-feiras, das 18h às 21h",
-                        "Distribui: Cobertores e refeições.",
-                        -16.6404, -49.3125)
+                new Ponto(
+                        "Instituto Mão Amiga",
+                        "Av. Deputado Jamel Cecílio, 2690",
+                        "Jardim Goiás",
+                        "Seg a Sex, 8h às 18h",
+                        "coleta"
+                ),
+                new Ponto(
+                        "Faculdade SENAI Fatesg",
+                        "Rua 227-A, 95",
+                        "Setor Leste Universitário",
+                        "Seg a Sex, 8h às 21h",
+                        "coleta"
+                ),
+                new Ponto(
+                        "Sesi Multiparque",
+                        "Av. João Leite, 915",
+                        "Santa Genoveva",
+                        "Sábados, 8h às 12h",
+                        "coleta"
+                ),
+                new Ponto(
+                        "Casa da Indústria - FIEG",
+                        "Av. Araguaia, 1544",
+                        "Setor Leste Vila Nova",
+                        "Sábados, 12h às 16h",
+                        "coleta"
+                ),
+                new Ponto(
+                        "Centro Cultural Oscar Niemeyer",
+                        "Av. Deputado Jamel Cecílio, Km 01",
+                        "Chácaras Alto da Glória",
+                        "Ter a Dom, 14h às 19h",
+                        "distribuição"
+                ),
+                new Ponto(
+                        "Shopping Flamboyant",
+                        "Av. Deputado Jamel Cecílio, 3300",
+                        "Jardim Goiás",
+                        "Domingos, 7h às 13h",
+                        "distribuição"
+                ),
+                new Ponto(
+                        "Shopping Cerrado",
+                        "Av. Anhanguera, 10790",
+                        "Aeroviário",
+                        "Qua e Sex, 9h às 17h",
+                        "distribuição"
+                ),
+                new Ponto(
+                        "Shopping Passeio das Águas",
+                        "Av. Perimetral Norte, 8303",
+                        "Fazenda Caveiras",
+                        "Segundas-feiras, 18h às 21h",
+                        "distribuição"
+                )
         ));
     }
 }

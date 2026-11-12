@@ -1,6 +1,6 @@
 # Instituto Mão Amiga 🤝
 
-> Plataforma integrada para localização de pontos de coleta parceiros, registro de doações e acompanhamento de métricas de impacto comunitário.
+> Plataforma integrada para localização e gestão de pontos de coleta e distribuição parceiros e registro de doações.
 
 [![React Native](https://img.shields.io/badge/React_Native-0.88-61DAFB?logo=react&logoColor=black)](https://reactnative.dev/)
 [![Expo](https://img.shields.io/badge/Expo-SDK_58-000020?logo=expo&logoColor=white)](https://expo.dev/)
@@ -8,7 +8,7 @@
 [![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Swagger](https://img.shields.io/badge/Swagger-OpenAPI_3-85EA2D?logo=swagger&logoColor=black)](http://localhost:8080/swagger-ui/index.html)
-[![Database](https://img.shields.io/badge/Database-H2_In--Memory-003B57?logo=databricks&logoColor=white)](https://www.h2database.com/)
+[![Database](https://img.shields.io/badge/Database-H2-003B57?logo=databricks&logoColor=white)](https://www.h2database.com/)
 
 ---
 
@@ -23,10 +23,10 @@
   - [1. Backend (API Spring Boot)](#1-backend-api-spring-boot)
   - [2. Frontend (App Mobile Expo)](#2-frontend-app-mobile-expo)
   - [Configuração de Rede do App](#configuração-de-rede-do-app)
-- [Documentação da API & Ferramentas](#-documentação-da-api--swagger)
+- [Documentação da API & Swagger](#-documentação-da-api--swagger)
   - [Swagger UI (OpenAPI 3)](#-swagger-ui-openapi-3)
   - [Console do Banco H2 (Web UI)](#️-console-do-banco-h2-web-ui)
-  - [Rotas Disponíveis](#rotas-disponíveis)
+  - [Rotas Disponíveis — Pontos de Coleta (`/api/v1/pontos`)](#rotas-disponíveis--pontos-de-coleta-apiv1pontos)
 - [Qualidade e Testes](#-qualidade-e-testes)
 - [Padrões e Decisões Técnicas](#-padrões-e-decisões-técnicas)
 
@@ -34,62 +34,53 @@
 
 ## 📖 Visão Geral
 
-O projeto **Instituto Mão Amiga** é uma solução composta por:
-1. **Aplicativo Mobile (React Native / Expo):** Interface moderna e responsiva voltada para doadores consultarem locais de arrecadação em Goiânia/GO, favoritarem pontos e gerenciarem o histórico local de doações.
-2. **API REST (Spring Boot):** Microsserviço de fornecimento dos pontos de coleta, com suporte a paginação nativa, ordenação dinâmica e persistência em banco de dados em memória (H2).
+O projeto **Instituto Mão Amiga** é organizado em duas camadas principais:
+1. **[`api/`](./api) — API REST (Spring Boot):** Backend em Java 17 + Spring Boot 3.5 responsável pelo CRUD de pontos de coleta e distribuição em Goiânia/GO, com validação de dados (`Bean Validation`), documentação interativa via Swagger/OpenAPI e persistência em banco de dados H2 gravado em arquivo.
+2. **[`app/`](./app) — Aplicativo Mobile/Web (React Native / Expo):** Interface voltada para consulta de locais de arrecadação/distribuição, favoritos e gerenciamento de doações.
 
 ---
 
 ## ✨ Funcionalidades
 
-### 📍 Pontos de Coleta
-- **Listagem Paginada:** Consumo resiliente da API com paginação sob demanda (*infinite scroll*) e *pull-to-refresh*.
-- **Tratamento de Indisponibilidade:** Feedback visual com botão de retry quando a API estiver offline.
-- **Detalhes Completos:** Exibição de endereço, horários de atendimento, itens aceitos e coordenadas geográficas (latitude/longitude).
-- **Favoritos:** Armazenamento local no dispositivo para acesso rápido.
+### 📍 Pontos de Coleta e Distribuição (API)
+- **CRUD Completo (`/api/v1/pontos`):** Listagem, busca por `UUID`, cadastro (`POST`), edição (`PUT`) e exclusão (`DELETE`).
+- **Validação no Servidor (`@Valid`):** Campos obrigatórios (`nome`, `endereco`, `bairro`, `horario` e `tipo`) validados via `PontoRequestDTO`, retornando `400 Bad Request` caso algum campo esteja vazio.
+- **Persistência em Arquivo (H2):** Dados mantidos entre reinícios em `./data/maoamiga`, com carga inicial automática de 8 pontos em Goiânia sem duplicação.
 
-### 📦 Gestão de Doações
-- **Cadastro e Edição:** Formulário com validações rigorosas (apenas dígitos inteiros positivos para quantidade, categorias fixas e vinculação com os destinos fornecidos pela API).
-- **Rascunho Automático (*Auto-Save*):** Preservação instantânea dos campos em preenchimento para prevenir perda de dados.
-- **Histórico & Filtros:** Lista decrescente cronológica com filtragem dinâmica por categoria (*case-insensitive*).
-- **Resumo Inteligente:** Consolidação de totais doados por categoria (estado derivado via `useMemo`).
-- **Gerenciamento Local (CRUD):** Visualização individual, edição e exclusão de registros.
+### 📱 Aplicativo (`app/`)
+- **Consulta de Pontos e Favoritos:** Visualização dos pontos de coleta e marcação de favoritos no dispositivo (`AsyncStorage`).
+- **Gestão de Doações:** Cadastro, edição, exclusão, rascunho automático e histórico de doações.
 
 ---
 
 ## 🏗 Arquitetura & Estrutura
 
-O repositório é organizado no formato monorepo simplificado:
-
-
-jhguyhgfuj
+O repositório está organizado nas pastas `api/` e `app/`:
 
 ```bash
 instituto-mao-amiga/
 ├── api/                           # Backend Spring Boot
 │   ├── src/main/java/br/com/maoamiga/api/
-│   │   ├── config/                # Carga de dados inicial, CORS e Global Error Handling
-│   │   └── ponto/                 # Controller, Service, Repository, Entidade e DTO (Record)
-│   ├── src/main/resources/        # application.properties (H2, porta, paginação)
+│   │   ├── config/                # CargaInicial, CorsConfig, OpenApiConfig e TratamentoDeErros
+│   │   ├── controller/            # PontoController (/api/v1/pontos)
+│   │   ├── dto/                   # PontoRequestDTO (@Valid) e PontoResponseDTO (record)
+│   │   ├── entity/                # Entidade JPA Ponto (UUID, nome, endereco, bairro, horario, tipo)
+│   │   ├── repository/            # PontoRepository (Spring Data JPA)
+│   │   └── service/               # PontoService e PontoNaoEncontradoException
+│   ├── src/main/resources/        # application.properties (H2 em arquivo, porta 8080)
 │   ├── src/test/java/             # Testes de integração do PontoController
-│   └── pom.xml                    # Dependências Maven
+│   └── pom.xml                    # Dependências Maven (Web, JPA, H2, Validation, Lombok, Swagger)
 │
-├── src/                           # Frontend React Native (Expo)
-│   ├── constants/                 # Categorias e constantes de domínio
-│   ├── screens/                   # Telas desacopladas (UI + navegação tipada)
-│   ├── services/
-│   │   ├── api.ts                 # Cliente HTTP centralizado (fetch e tratamento de rede)
-│   │   ├── pontosService.ts       # Serviços de consumo da API de pontos
-│   │   ├── storage.ts             # Wrapper seguro para AsyncStorage
-│   │   ├── doacoesStorage.ts      # Persistência em fila assíncrona do histórico de doações
-│   │   ├── rascunhoStorage.ts     # Gerenciamento de rascunhos de formulário
-│   │   └── favoritosStorage.ts    # Gerenciamento de pontos favoritos
-│   ├── types/                     # Tipagens TypeScript (Ponto, Doação, Navegação)
-│   └── utils/                     # Helpers (alertas cross-platform Web/Mobile)
-│
-├── App.tsx                        # Ponto de entrada e configuração do React Navigation
-├── package.json                   # Dependências e scripts do app
-└── tsconfig.json                  # TypeScript com modo estrito ("strict": true)
+└── app/                           # Frontend React Native (Expo)
+    ├── src/
+    │   ├── constants/             # Categorias e constantes de domínio
+    │   ├── screens/               # Telas do aplicativo (UI + navegação tipada)
+    │   ├── services/              # Cliente HTTP (api.ts) e serviços de dados/storage
+    │   ├── types/                 # Tipagens TypeScript (Ponto, Doação, Navegação)
+    │   └── utils/                 # Helpers (alertas cross-platform Web/Mobile)
+    ├── App.tsx                    # Ponto de entrada e configuração do React Navigation
+    ├── package.json               # Dependências e scripts do app
+    └── tsconfig.json              # TypeScript com modo estrito ("strict": true)
 ```
 
 ---
@@ -98,28 +89,26 @@ instituto-mao-amiga/
 
 | Camada | Tecnologia | Propósito |
 | :--- | :--- | :--- |
-| **Mobile** | [React Native 0.88](https://reactnative.dev/) | Framework mobile nativo multiplataforma |
-| **Plataforma** | [Expo SDK 58](https://expo.dev/) | Ecossistema de ferramentas e runtime |
-| **Linguagem** | [TypeScript](https://www.typescriptlang.org/) | Tipagem estrita de ponta a ponta sem `any` |
-| **Navegação** | [React Navigation (Native Stack)](https://reactnavigation.org/) | Navegação fluida com transições nativas |
-| **Armazenamento**| [AsyncStorage](https://react-native-async-storage.github.io/async-storage/) | Persistência local no dispositivo do usuário |
-| **Backend** | [Spring Boot 3.5](https://spring.io/) | Framework robusto para desenvolvimento da API REST |
-| **Documentação API** | [Swagger / OpenAPI 3](http://localhost:8080/swagger-ui/index.html) | Interface interativa de testes e documentação dos endpoints |
+| **Backend** | [Spring Boot 3.5](https://spring.io/) | Framework para desenvolvimento da API REST |
 | **Persistência** | [Spring Data JPA / Hibernate](https://spring.io/projects/spring-data-jpa) | Mapeamento objeto-relacional |
-| **Banco de Dados**| [H2 Database](https://www.h2database.com/) | Banco relacional em memória com seed automático |
+| **Validação** | [Bean Validation](https://beanvalidation.org/) | Validação declarativa dos DTOs de entrada (`@Valid`, `@NotBlank`) |
+| **Produtividade** | [Project Lombok](https://projectlombok.org/) | Redução de código boilerplate nas entidades |
+| **Banco de Dados**| [H2 Database](https://www.h2database.com/) | Banco relacional persistido em arquivo (`jdbc:h2:file:./data/maoamiga`) |
+| **Documentação API** | [Swagger / OpenAPI 3](http://localhost:8080/swagger-ui/index.html) | Interface interativa de testes e documentação dos endpoints |
+| **Mobile / Web** | [React Native 0.88](https://reactnative.dev/) + [Expo SDK 58](https://expo.dev/) | Aplicativo multiplataforma |
+| **Linguagem App** | [TypeScript](https://www.typescriptlang.org/) | Tipagem estrita (`strict: true`) |
+| **Navegação** | [React Navigation (Native Stack)](https://reactnavigation.org/) | Navegação entre telas |
+| **Armazenamento Local**| [AsyncStorage](https://react-native-async-storage.github.io/async-storage/) | Persistência local no dispositivo |
 
 ---
 
 ## 📋 Pré-requisitos
 
 Certifique-se de ter instalado em sua máquina:
-- **Node.js**: versão 20 LTS ou superior
-- **npm**: versão 10 ou superior
 - **Java JDK**: versão 17 ou superior
-- **Apache Maven**: versão 3.8 ou superior
-- **Dispositivo ou Emulador:**
-  - Dispositivo físico com o app **Expo Go** instalado (Android / iOS), ou
-  - Emulador configurado (Android Studio ou Xcode Simulator).
+- **Node.js**: versão 20 LTS ou superior e **npm**
+- **Dispositivo, Emulador ou Navegador Web:**
+  - Dispositivo físico com o app **Expo Go** instalado (Android / iOS), emulador (Android Studio / Xcode) ou navegador web.
 
 ---
 
@@ -127,32 +116,31 @@ Certifique-se de ter instalado em sua máquina:
 
 ### 1. Backend (API Spring Boot)
 
-Abra um terminal dedicado para o serviço da API:
+Abra um terminal para o serviço da API:
 
 ```bash
-# Acesse o diretório da API
 cd api
 
-# Inicialize o servidor Spring Boot
 # No Windows (PowerShell / CMD):
 .\mvnw.cmd spring-boot:run
 
 # No Linux / macOS:
 ./mvnw spring-boot:run
-# (Ou simplesmente `mvn spring-boot:run` se tiver o Maven instalado no PATH)
 ```
 
 A API estará acessível em: `http://localhost:8080`.  
-> *Nota: Os 8 pontos de coleta de Goiânia são carregados automaticamente via `CargaInicial` a cada inicialização.*
+> *Nota: Os 8 pontos iniciais de Goiânia são carregados automaticamente via `CargaInicial` caso o banco esteja vazio, sem duplicar a cada reinício.*
 
 ---
 
 ### 2. Frontend (App Mobile Expo)
 
-Abra um segundo terminal na **raiz do projeto**:
+Abra um segundo terminal na pasta `app`:
 
 ```bash
-# 1. Instale as dependências (obrigatório)
+cd app
+
+# 1. Instale as dependências
 npm install
 
 # 2. Inicie o servidor Metro / Expo
@@ -169,16 +157,13 @@ Após iniciar, o terminal exibirá as opções:
 
 ### Configuração de Rede do App
 
-A comunicação com o backend é centralizada em [src/services/api.ts](file:///src/services/api.ts) e configurada com **resolução dinâmica e automática de IP**:
+A comunicação com o backend é centralizada em [`app/src/services/api.ts`](./app/src/services/api.ts) com resolução automática de host:
 
 | Ambiente | Host Resolvido | Como Funciona |
 | :--- | :--- | :--- |
-| **Expo Go (Dispositivo Físico)** | `http://<IP-DO-PC>:8080` (ex: `192.168.0.4:8080`) | **Automático**: O app extrai o IP da máquina hospedeira diretamente da conexão do Metro bundler via `expo-constants`. |
-| **Emulador Android Studio** | `http://10.0.2.2:8080` | **Automático**: Utiliza o alias oficial do emulador para a porta local do host. |
-| **Simulador iOS / Web** | `http://localhost:8080` | **Automático**: Comunicação direta via localhost. |
-
-> [!TIP]
-> **Requisito para celular físico:** O celular e o computador devem estar conectados na **mesma rede Wi-Fi**. Certifique-se também de que o Firewall do Windows permite conexões de entrada na porta `8080` (Java).
+| **Expo Go (Dispositivo Físico)** | `http://<IP-DO-PC>:8080` (ex: `192.168.0.4:8080`) | **Automático**: Extrai o IP da máquina hospedeira a partir do Metro bundler via `expo-constants`. |
+| **Emulador Android Studio** | `http://10.0.2.2:8080` | **Automático**: Utiliza o alias oficial do emulador para a máquina host. |
+| **Simulador iOS / Web** | `http://localhost:8080` | **Automático**: Comunicação direta via `localhost`. |
 
 ---
 
@@ -186,77 +171,148 @@ A comunicação com o backend é centralizada em [src/services/api.ts](file:///s
 
 ### 📑 Swagger UI (OpenAPI 3)
 
-Com a API em execução, acesse a documentação interativa com execução de testes diretamente pelo navegador:
+Com a API em execução, acesse a documentação interativa pelo navegador:
 
-- **Swagger UI (Web/Local):** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-- **Swagger UI (Acesso pelo Celular):** `http://192.168.0.4:8080/swagger-ui.html`
+- **Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 - **Especificação OpenAPI JSON:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 
 ---
 
 ### 🗄️ Console do Banco H2 (Web UI)
 
-O banco de dados relacional em memória H2 possui uma interface web para consulta de tabelas (`PONTO`), execução de queries SQL e inspeção em tempo real:
+O banco de dados H2 gravado em arquivo possui uma interface web para consulta da tabela `PONTOS` e execução de queries SQL:
 
 - **Link de Acesso Local:** [http://localhost:8080/h2-console](http://localhost:8080/h2-console)
-- **Link de Acesso via Rede:** `http://192.168.0.4:8080/h2-console`
 
 #### Parâmetros de Conexão na Tela de Login:
 | Campo | Valor a Preencher |
 | :--- | :--- |
 | **Driver Class** | `org.h2.Driver` |
-| **JDBC URL** | `jdbc:h2:mem:maoamiga` |
+| **JDBC URL** | `jdbc:h2:file:./data/maoamiga` |
 | **User Name** | `sa` |
 | **Password** | *(deixar em branco / vazio)* |
 
-> Ao clicar em **Connect**, você poderá rodar queries como `SELECT * FROM PONTO;` e visualizar os 8 registros semeados na inicialização.
+> Ao clicar em **Connect**, você poderá rodar `SELECT * FROM PONTOS;` para visualizar os registros persistidos.
 
 ---
 
-### Rotas Disponíveis
+### Rotas Disponíveis — Pontos de Coleta (`/api/v1/pontos`)
 
-| Método | Endpoint | Descrição | Parâmetros de Query |
-| :---: | :--- | :--- | :--- |
-| `GET` | `/pontos` | Lista paginada dos pontos de coleta | `page` (inicia em 0), `size` (padrão 20, máx 50), `sort` (ex: `nome,asc`) |
-| `GET` | `/pontos/{id}` | Busca um ponto específico por ID | — |
+| Método | URL Completa | Descrição | Status de Sucesso |
+| :---: | :--- | :--- | :---: |
+| `GET` | `http://localhost:8080/api/v1/pontos` | Lista todos os pontos de coleta e distribuição | `200 OK` |
+| `GET` | `http://localhost:8080/api/v1/pontos/{id}` | Busca um ponto específico por UUID | `200 OK` |
+| `POST` | `http://localhost:8080/api/v1/pontos` | Cadastra um novo ponto (com `@Valid`) | `201 Created` |
+| `PUT` | `http://localhost:8080/api/v1/pontos/{id}` | Atualiza um ponto existente por UUID (com `@Valid`) | `200 OK` |
+| `DELETE` | `http://localhost:8080/api/v1/pontos/{id}` | Exclui um ponto existente por UUID | `204 No Content` |
 
-### Exemplo de Resposta: `GET /pontos`
+#### 1. `GET http://localhost:8080/api/v1/pontos` (`200 OK`)
+```json
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "nome": "Instituto Mão Amiga",
+    "endereco": "Av. Deputado Jamel Cecílio, 2690",
+    "bairro": "Jardim Goiás",
+    "horario": "Seg a Sex, 8h às 18h",
+    "tipo": "coleta"
+  }
+]
+```
 
+#### 2. `GET http://localhost:8080/api/v1/pontos/{id}` (`200 OK`)
 ```json
 {
-  "content": [
-    {
-      "id": 1,
-      "nome": "Paróquia Universitária São João Evangelista",
-      "endereco": "Praça Universitária, 1440 - Setor Leste Universitário, Goiânia - GO",
-      "diasHorarios": "Segunda a Sexta, das 08h às 17h",
-      "itensRecebeDistribui": "Roupas, calçados, cobertores e alimentos não perecíveis",
-      "latitude": -16.679237,
-      "longitude": -49.243574
-    }
-  ],
-  "page": {
-    "size": 20,
-    "number": 0,
-    "totalElements": 8,
-    "totalPages": 1
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "nome": "Instituto Mão Amiga",
+  "endereco": "Av. Deputado Jamel Cecílio, 2690",
+  "bairro": "Jardim Goiás",
+  "horario": "Seg a Sex, 8h às 18h",
+  "tipo": "coleta"
+}
+```
+
+#### 3. `POST http://localhost:8080/api/v1/pontos` (`201 Created`)
+**Corpo da Requisição (`PontoRequestDTO`):**
+```json
+{
+  "nome": "Paróquia São João Evangelista",
+  "endereco": "Praça Universitária, 1440",
+  "bairro": "Setor Leste Universitário",
+  "horario": "Seg a Sex, 8h às 17h",
+  "tipo": "coleta"
+}
+```
+**Resposta (`201 Created`):**
+```json
+{
+  "id": "d4e5f6a7-b8c9-4012-9def-0123456789ab",
+  "nome": "Paróquia São João Evangelista",
+  "endereco": "Praça Universitária, 1440",
+  "bairro": "Setor Leste Universitário",
+  "horario": "Seg a Sex, 8h às 17h",
+  "tipo": "coleta"
+}
+```
+
+#### 4. `PUT http://localhost:8080/api/v1/pontos/{id}` (`200 OK`)
+**Corpo da Requisição (`PontoRequestDTO`):**
+```json
+{
+  "nome": "Paróquia São João Evangelista",
+  "endereco": "Praça Universitária, 1440",
+  "bairro": "Setor Leste Universitário",
+  "horario": "Seg a Sáb, 8h às 18h",
+  "tipo": "distribuição"
+}
+```
+**Resposta (`200 OK`):**
+```json
+{
+  "id": "d4e5f6a7-b8c9-4012-9def-0123456789ab",
+  "nome": "Paróquia São João Evangelista",
+  "endereco": "Praça Universitária, 1440",
+  "bairro": "Setor Leste Universitário",
+  "horario": "Seg a Sáb, 8h às 18h",
+  "tipo": "distribuição"
+}
+```
+
+#### 5. `DELETE http://localhost:8080/api/v1/pontos/{id}` (`204 No Content`)
+Sem corpo de resposta (`204 No Content`).
+
+#### 6. Erro de Validação (`400 Bad Request` — Campo obrigatório vazio)
+```json
+{
+  "type": "about:blank",
+  "title": "Erro de validação",
+  "status": 400,
+  "detail": "Um ou mais campos obrigatórios estão inválidos ou vazios.",
+  "instance": "/api/v1/pontos",
+  "campos": {
+    "nome": "O nome é obrigatório",
+    "bairro": "O bairro é obrigatório"
   }
 }
 ```
 
-### Tratamento de Códigos de Status
-
-- `200 OK`: Requisição processada com sucesso.
-- `400 Bad Request`: Parâmetro de ordenação ou consulta inválido (`ParametroInvalidoException`).
-- `404 Not Found`: Ponto de coleta não encontrado (`PontoNaoEncontradoException`).
-- `500 Internal Server Error`: Erro inesperado tratado uniformemente via `TratamentoDeErros`.
+#### 7. Recurso Não Encontrado (`404 Not Found` — ID inexistente)
+```json
+{
+  "type": "about:blank",
+  "title": "Ponto não encontrado",
+  "status": 404,
+  "detail": "Ponto não encontrado com id: 00000000-0000-0000-0000-000000000000",
+  "instance": "/api/v1/pontos/00000000-0000-0000-0000-000000000000"
+}
+```
 
 ---
 
 ## 🧪 Qualidade e Testes
 
 ### Testes Automatizados no Backend
-O backend possui testes de integração do controller validando respostas paginadas, detalhes, ordenação e exceções:
+O backend possui testes de integração do `PontoController` validando listagem, busca por ID, cadastro, edição, exclusão e respostas de erro (`400` e `404`):
 
 ```bash
 cd api
@@ -269,9 +325,10 @@ cd api
 ```
 
 ### Verificação de Tipos no Frontend
-O projeto segue o modo estrito do TypeScript (`strict: true`), garantindo ausência de `any` ou supressões `@ts-ignore`:
+O aplicativo segue o modo estrito do TypeScript (`strict: true`):
 
 ```bash
+cd app
 npx tsc --noEmit
 ```
 
@@ -279,7 +336,6 @@ npx tsc --noEmit
 
 ## 💡 Padrões e Decisões Técnicas
 
-- **Separação de Responsabilidades (SoC):** Telas cuidam exclusivamente de apresentação e interação de interface. Requisições HTTP e persistência são delegadas a camadas especializadas de serviço (`src/services/`).
-- **Prevenção de Condições de Corrida (*Race Conditions*):** As operações de escrita em disco em `doacoesStorage.ts` utilizam encadeamento de promessas em fila, impedindo sobrescrita inadvertida em caso de interações simultâneas.
-- **Performance com Estado Derivado:** Cálculos de totalizadores e filtros de categorias são computados via `useMemo`, eliminando sincronizações redundantes de estado no React.
-- **Segurança de Tipos no Backend:** Utilização de `records` Java imutáveis (`PontoResponse`) para comunicação externa da API, mantendo as entidades JPA isoladas do ecossistema de transporte HTTP.
+- **Separação em Monorepo (`api/` e `app/`):** Isolamento claro entre o backend Spring Boot e o projeto mobile/web Expo.
+- **Arquitetura em Camadas no Backend:** Divisão em `entity`, `repository`, `service`, `controller`, `dto` e `config`, expondo exclusivamente `PontoResponseDTO` (`record`) nas respostas HTTP e validando a entrada com `PontoRequestDTO` (`@Valid`).
+- **Separação de Responsabilidades no App:** Telas cuidam de apresentação e interação, delegando requisições HTTP e persistência para `app/src/services/`.

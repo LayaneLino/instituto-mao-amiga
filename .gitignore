@@ -17,6 +17,7 @@ expo-env.d.ts
 
 # IdeaProjects
 .idea
+target/
 
 # Native
 .kotlin/
@@ -46,10 +47,14 @@ yarn-error.*
 *.tsbuildinfo
 
 # generated native folders
-/ios
-/android
+ios/
+android/
 
 # API Spring Boot (pasta api/)
 api/target/
+api/data/
+data/
+*.mv.db
+*.trace.db
 api/.mvn/wrapper/maven-wrapper.jar
 *.class
