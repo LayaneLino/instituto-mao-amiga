@@ -36,16 +36,48 @@ class PontoControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    void listarDevolvePeloMenosOitoPontosDaCargaInicial() throws Exception {
+    void listarDevolvePeloMenosVinteECincoPontosDaCargaInicial() throws Exception {
         mockMvc.perform(get("/api/v1/pontos"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(greaterThanOrEqualTo(8)))
+                .andExpect(jsonPath("$.length()").value(greaterThanOrEqualTo(25)))
                 .andExpect(jsonPath("$[0].id").isNotEmpty())
                 .andExpect(jsonPath("$[0].nome").isNotEmpty())
                 .andExpect(jsonPath("$[0].endereco").isNotEmpty())
                 .andExpect(jsonPath("$[0].bairro").isNotEmpty())
                 .andExpect(jsonPath("$[0].horario").isNotEmpty())
                 .andExpect(jsonPath("$[0].tipo").isNotEmpty());
+    }
+
+    @Test
+    void filtroSemParametroDevolvePrimeiraPaginaOrdenadaPorNomeComDezItensNoFormatoViaDto() throws Exception {
+        mockMvc.perform(get("/api/v1/pontos/filtro"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(10))
+                .andExpect(jsonPath("$.page.size").value(10))
+                .andExpect(jsonPath("$.page.number").value(0))
+                .andExpect(jsonPath("$.page.totalElements").value(greaterThanOrEqualTo(25)))
+                .andExpect(jsonPath("$.content[0].nome").value("Araguaia Shopping"));
+    }
+
+    @Test
+    void filtroBuscaPorNomeOuBairroSemDiferenciarMaiusculasEMinusculas() throws Exception {
+        mockMvc.perform(get("/api/v1/pontos/filtro")
+                        .param("filtro", "bueno"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(3))
+                .andExpect(jsonPath("$.page.totalElements").value(3));
+    }
+
+    @Test
+    void filtroRespeitaSegundaPaginaEOrdenacaoPorBairro() throws Exception {
+        mockMvc.perform(get("/api/v1/pontos/filtro")
+                        .param("page", "1")
+                        .param("size", "10")
+                        .param("sort", "bairro,asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(10))
+                .andExpect(jsonPath("$.page.number").value(1))
+                .andExpect(jsonPath("$.page.size").value(10));
     }
 
     @Test

@@ -67,7 +67,6 @@ export default function TelaListaPontos({ navigation }: Props) {
     });
   }, []);
 
-  // Só grava depois de ter carregado, para não sobrescrever os favoritos salvos.
   useEffect(() => {
     if (favoritosCarregados) salvarFavoritos(favoritos);
   }, [favoritos, favoritosCarregados]);

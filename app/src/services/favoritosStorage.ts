@@ -2,8 +2,6 @@ import { lerJSON, salvarJSON } from './storage';
 
 const CHAVE_FAVORITOS = '@mao_amiga:pontos_favoritos';
 
-// Retorna os ids dos pontos favoritos. Versões antigas do app guardavam ids como
-// texto ("1"); aqui eles são convertidos para número, que é o id usado pela API.
 export async function listarFavoritos(): Promise<number[]> {
   try {
     const salvo = await lerJSON<unknown>(CHAVE_FAVORITOS);

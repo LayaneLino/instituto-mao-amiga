@@ -1,12 +1,12 @@
 import type { PaginaPontos, Ponto } from '../types/ponto';
 import { ApiError, apiGet } from './api';
 
-const TAMANHO_MAXIMO_PAGINA = 50; // limite definido pela API
+const TAMANHO_MAXIMO_PAGINA = 50;
 
 type OpcoesListagem = {
   page?: number;
   size?: number;
-  sort?: string; // ex.: "nome,asc"
+  sort?: string;
 };
 
 export function listarPontos({ page = 0, size = 20, sort }: OpcoesListagem = {}): Promise<PaginaPontos> {
@@ -15,7 +15,6 @@ export function listarPontos({ page = 0, size = 20, sort }: OpcoesListagem = {})
   return apiGet<PaginaPontos>('/pontos', parametros);
 }
 
-// Percorre todas as páginas (usado onde a tela precisa de todos os pontos, como o seletor de destino).
 export async function listarTodosPontos(): Promise<Ponto[]> {
   const todos: Ponto[] = [];
   let pagina = 0;
@@ -31,7 +30,6 @@ export async function listarTodosPontos(): Promise<Ponto[]> {
   return todos;
 }
 
-// Devolve null quando a API responde 404 (ponto não existe). Outros erros sobem.
 export async function buscarPontoPorId(id: number): Promise<Ponto | null> {
   try {
     return await apiGet<Ponto>(`/pontos/${id}`);

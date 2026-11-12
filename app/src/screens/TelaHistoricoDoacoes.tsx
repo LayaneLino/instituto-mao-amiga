@@ -64,7 +64,6 @@ export default function TelaHistoricoDoacoes({ navigation }: Props) {
     }, [])
   );
 
-  // Estado derivado: calculado a partir de `doacoes`, sem guardar cópias.
   const doacoesFiltradas = useMemo(
     () => doacoes.filter((d) => d.tipoItem.toLowerCase().includes(busca.toLowerCase())),
     [doacoes, busca]

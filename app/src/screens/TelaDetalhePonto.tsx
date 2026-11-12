@@ -29,7 +29,7 @@ export default function TelaDetalhePonto({ route }: Props) {
     setCarregando(true);
     setErro('');
     try {
-      setPonto(await buscarPontoPorId(id)); // null = a API respondeu 404
+      setPonto(await buscarPontoPorId(id));
     } catch {
       setErro('Não foi possível carregar o ponto. Verifique se a API está no ar e tente novamente.');
     } finally {

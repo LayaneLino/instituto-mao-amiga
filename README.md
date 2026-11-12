@@ -44,8 +44,9 @@ O projeto **Instituto Mão Amiga** é organizado em duas camadas principais:
 
 ### 📍 Pontos de Coleta e Distribuição (API)
 - **CRUD Completo (`/api/v1/pontos`):** Listagem, busca por `UUID`, cadastro (`POST`), edição (`PUT`) e exclusão (`DELETE`).
+- **Busca Paginada e Ordenada (`/api/v1/pontos/filtro`):** Filtro por `nome` ou `bairro` (*case-insensitive* via `@Query`), paginação padrão de 10 itens ordenados por `nome` (`@PageableDefault`) e resposta no formato `content` + `page` (`via_dto`).
 - **Validação no Servidor (`@Valid`):** Campos obrigatórios (`nome`, `endereco`, `bairro`, `horario` e `tipo`) validados via `PontoRequestDTO`, retornando `400 Bad Request` caso algum campo esteja vazio.
-- **Persistência em Arquivo (H2):** Dados mantidos entre reinícios em `./data/maoamiga`, com carga inicial automática de 8 pontos em Goiânia sem duplicação.
+- **Persistência em Arquivo (H2):** Dados mantidos entre reinícios em `./data/maoamiga`, com carga inicial automática de 26 pontos em Goiânia sem duplicação.
 
 ### 📱 Aplicativo (`app/`)
 - **Consulta de Pontos e Favoritos:** Visualização dos pontos de coleta e marcação de favoritos no dispositivo (`AsyncStorage`).
@@ -129,7 +130,7 @@ cd api
 ```
 
 A API estará acessível em: `http://localhost:8080`.  
-> *Nota: Os 8 pontos iniciais de Goiânia são carregados automaticamente via `CargaInicial` caso o banco esteja vazio, sem duplicar a cada reinício.*
+> *Nota: Os 26 pontos iniciais de Goiânia são carregados automaticamente via `CargaInicial` caso o banco ainda não os possua, sem duplicar a cada reinício.*
 
 ---
 
@@ -201,10 +202,114 @@ O banco de dados H2 gravado em arquivo possui uma interface web para consulta da
 | Método | URL Completa | Descrição | Status de Sucesso |
 | :---: | :--- | :--- | :---: |
 | `GET` | `http://localhost:8080/api/v1/pontos` | Lista todos os pontos de coleta e distribuição | `200 OK` |
+| `GET` | `http://localhost:8080/api/v1/pontos/filtro` | Busca paginada por nome ou bairro (`filtro`, `page`, `size`, `sort`) | `200 OK` |
 | `GET` | `http://localhost:8080/api/v1/pontos/{id}` | Busca um ponto específico por UUID | `200 OK` |
 | `POST` | `http://localhost:8080/api/v1/pontos` | Cadastra um novo ponto (com `@Valid`) | `201 Created` |
 | `PUT` | `http://localhost:8080/api/v1/pontos/{id}` | Atualiza um ponto existente por UUID (com `@Valid`) | `200 OK` |
 | `DELETE` | `http://localhost:8080/api/v1/pontos/{id}` | Exclui um ponto existente por UUID | `204 No Content` |
+
+#### Exemplos de Busca Paginada (`/api/v1/pontos/filtro`)
+
+##### A) Sem filtro (1ª página, 10 itens ordenados por `nome`)
+**Chamada:** `GET http://localhost:8080/api/v1/pontos/filtro?page=0&size=10`
+```json
+{
+  "content": [
+    {
+      "id": "11111111-2222-3333-4444-555555555501",
+      "nome": "Araguaia Shopping",
+      "endereco": "Rua 44, 399",
+      "bairro": "Setor Central",
+      "horario": "Seg a Sáb, 8h30 às 20h30",
+      "tipo": "coleta"
+    },
+    {
+      "id": "11111111-2222-3333-4444-555555555502",
+      "nome": "Associação Solidária Campinas",
+      "endereco": "Av. 24 de Outubro, 1820",
+      "bairro": "Setor Campinas",
+      "horario": "Seg a Sex, 9h às 17h",
+      "tipo": "distribuição"
+    }
+  ],
+  "page": {
+    "size": 10,
+    "number": 0,
+    "totalElements": 26,
+    "totalPages": 3
+  }
+}
+```
+
+##### B) Filtrando por bairro (`filtro=Bueno`)
+**Chamada:** `GET http://localhost:8080/api/v1/pontos/filtro?filtro=Bueno&page=0&size=10`
+```json
+{
+  "content": [
+    {
+      "id": "11111111-2222-3333-4444-555555555503",
+      "nome": "Casa de Apoio São Vicente",
+      "endereco": "Rua T-37, 2910",
+      "bairro": "Setor Bueno",
+      "horario": "Seg a Sex, 8h às 18h",
+      "tipo": "distribuição"
+    },
+    {
+      "id": "11111111-2222-3333-4444-555555555504",
+      "nome": "Goiânia Shopping",
+      "endereco": "Av. T-10, 1300",
+      "bairro": "Setor Bueno",
+      "horario": "Seg a Sáb, 10h às 22h",
+      "tipo": "coleta"
+    },
+    {
+      "id": "11111111-2222-3333-4444-555555555505",
+      "nome": "Parque Vaca Brava - Ponto Solidário",
+      "endereco": "Av. T-10, s/n",
+      "bairro": "Setor Bueno",
+      "horario": "Sáb e Dom, 8h às 14h",
+      "tipo": "coleta"
+    }
+  ],
+  "page": {
+    "size": 10,
+    "number": 0,
+    "totalElements": 3,
+    "totalPages": 1
+  }
+}
+```
+
+##### C) Pedindo a segunda página ordenada por bairro (`page=1&size=10&sort=bairro,asc`)
+**Chamada:** `GET http://localhost:8080/api/v1/pontos/filtro?page=1&size=10&sort=bairro,asc`
+```json
+{
+  "content": [
+    {
+      "id": "11111111-2222-3333-4444-555555555511",
+      "nome": "Casa de Apoio São Vicente",
+      "endereco": "Rua T-37, 2910",
+      "bairro": "Setor Bueno",
+      "horario": "Seg a Sex, 8h às 18h",
+      "tipo": "distribuição"
+    },
+    {
+      "id": "11111111-2222-3333-4444-555555555512",
+      "nome": "Goiânia Shopping",
+      "endereco": "Av. T-10, 1300",
+      "bairro": "Setor Bueno",
+      "horario": "Seg a Sáb, 10h às 22h",
+      "tipo": "coleta"
+    }
+  ],
+  "page": {
+    "size": 10,
+    "number": 1,
+    "totalElements": 26,
+    "totalPages": 3
+  }
+}
+```
 
 #### 1. `GET http://localhost:8080/api/v1/pontos` (`200 OK`)
 ```json
@@ -312,7 +417,7 @@ Sem corpo de resposta (`204 No Content`).
 ## 🧪 Qualidade e Testes
 
 ### Testes Automatizados no Backend
-O backend possui testes de integração do `PontoController` validando listagem, busca por ID, cadastro, edição, exclusão e respostas de erro (`400` e `404`):
+O backend possui testes de integração do `PontoController` validando listagem, busca paginada com filtro e ordenação (`/api/v1/pontos/filtro`), busca por ID, cadastro, edição, exclusão e respostas de erro (`400` e `404`):
 
 ```bash
 cd api

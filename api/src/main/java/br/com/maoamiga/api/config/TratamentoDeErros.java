@@ -1,6 +1,7 @@
 package br.com.maoamiga.api.config;
 
 import br.com.maoamiga.api.service.PontoNaoEncontradoException;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,16 @@ public class TratamentoDeErros {
         );
         problema.setTitle("Erro de validação");
         problema.setProperty("campos", erros);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problema);
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ProblemDetail> propriedadeOrdenacaoInvalida(PropertyReferenceException ex) {
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "Campo de ordenação inválido: " + ex.getPropertyName()
+        );
+        problema.setTitle("Parâmetro de ordenação inválido");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problema);
     }
 }

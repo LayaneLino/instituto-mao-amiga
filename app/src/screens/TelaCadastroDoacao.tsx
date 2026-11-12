@@ -22,7 +22,7 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
   const [erro, setErro] = useState('');
   const [carregou, setCarregou] = useState(false);
   const [salvando, setSalvando] = useState(false);
-  const salvandoRef = useRef(false); // trava síncrona: o state demora um render para valer
+  const salvandoRef = useRef(false);
 
   const [pontos, setPontos] = useState<Ponto[]>([]);
   const [carregandoPontos, setCarregandoPontos] = useState(true);
@@ -80,7 +80,6 @@ export default function TelaCadastroDoacao({ route, navigation }: Props) {
       return;
     }
 
-    // Só dígitos: rejeita "1e3", "0x10", "-5", "2.5", etc.
     const qtdTexto = quantidade.trim();
     if (!/^\d+$/.test(qtdTexto) || Number(qtdTexto) <= 0) {
       setErro('A quantidade deve ser um número inteiro maior que zero!');

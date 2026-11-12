@@ -1,4 +1,3 @@
-// Espelha, campo a campo, o record PontoResponse da API (api/.../ponto/PontoResponse.java).
 export type Ponto = {
   id: number;
   nome: string;
@@ -9,7 +8,6 @@ export type Ponto = {
   longitude: number;
 };
 
-// Formato do Page do Spring (PagedModel): { content, page }.
 export type PaginaPontos = {
   content: Ponto[];
   page: {

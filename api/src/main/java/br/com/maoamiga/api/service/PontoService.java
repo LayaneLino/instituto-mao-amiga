@@ -4,6 +4,8 @@ import br.com.maoamiga.api.dto.PontoRequestDTO;
 import br.com.maoamiga.api.dto.PontoResponseDTO;
 import br.com.maoamiga.api.entity.Ponto;
 import br.com.maoamiga.api.repository.PontoRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +24,14 @@ public class PontoService {
         return repository.findAll().stream()
                 .map(PontoResponseDTO::de)
                 .toList();
+    }
+
+    public Page<PontoResponseDTO> buscarPorFiltro(String filtro, Pageable pageable) {
+        String termo = (filtro == null) ? "" : filtro.trim();
+        if (termo.isEmpty()) {
+            return repository.findAll(pageable).map(PontoResponseDTO::de);
+        }
+        return repository.buscarPorFiltro(termo, pageable).map(PontoResponseDTO::de);
     }
 
     public PontoResponseDTO buscarPorId(UUID id) {

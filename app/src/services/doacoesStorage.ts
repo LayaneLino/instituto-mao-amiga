@@ -15,16 +15,11 @@ function ehDoacao(valor: unknown): valor is Doacao {
   );
 }
 
-// Lê a lista; se o AsyncStorage falhar, o erro sobe (para não sobrescrever
-// dados bons com uma lista vazia numa operação de escrita).
 async function lerLista(): Promise<Doacao[]> {
   const salvo = await lerJSON<unknown>(CHAVE_DOACOES);
   return Array.isArray(salvo) ? salvo.filter(ehDoacao) : [];
 }
 
-// Todas as operações são "ler -> alterar -> gravar a lista inteira".
-// Executá-las em fila evita que duas operações simultâneas
-// (ex.: toque duplo) se sobrescrevam.
 let fila: Promise<unknown> = Promise.resolve();
 function emSequencia<T>(tarefa: () => Promise<T>): Promise<T> {
   const resultado = fila.then(tarefa);
