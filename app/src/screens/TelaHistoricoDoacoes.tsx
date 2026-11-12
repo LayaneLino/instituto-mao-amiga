@@ -1,10 +1,27 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
+import type {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 import type { Doacao } from '../types/doacao';
-import { listarDoacoes } from '../services/doacoesStorage';
+import { listarPagina } from '../services/doacoesService';
+
+const TAMANHO_PAGINA = 10;
+const MSG_ERRO =
+  'Não foi possível carregar o histórico de doações. Verifique se a API está no ar e tente novamente.';
 
 const DoacaoItem = React.memo(({ doacao }: { doacao: Doacao }) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -28,65 +45,125 @@ const DoacaoItem = React.memo(({ doacao }: { doacao: Doacao }) => {
   );
 });
 
-type ResumoItem = { chave: string; nome: string; quantidade: number; contagem: number };
-
-function ordenarPorDataDesc(lista: Doacao[]): Doacao[] {
-  return [...lista].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
-}
-
-function gerarResumo(doacoes: Doacao[]): ResumoItem[] {
-  const mapaResumo = new Map<string, ResumoItem>();
-
-  doacoes.forEach((d) => {
-    const chave = d.tipoItem.trim().toLowerCase();
-    const atual = mapaResumo.get(chave) ?? { chave, nome: d.tipoItem.trim(), quantidade: 0, contagem: 0 };
-    atual.quantidade += d.quantidade;
-    atual.contagem += 1;
-    mapaResumo.set(chave, atual);
-  });
-
-  return Array.from(mapaResumo.values()).sort((a, b) => b.quantidade - a.quantidade);
-}
-
 type Props = NativeStackScreenProps<RootStackParamList, 'HistoricoDoacoes'>;
 
 export default function TelaHistoricoDoacoes({ navigation }: Props) {
   const [doacoes, setDoacoes] = useState<Doacao[]>([]);
   const [busca, setBusca] = useState('');
+  const [paginaAtual, setPaginaAtual] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(0);
+  const [carregando, setCarregando] = useState(true);
+  const [carregandoMais, setCarregandoMais] = useState(false);
+  const [atualizando, setAtualizando] = useState(false);
+  const [erro, setErro] = useState('');
+
+  const paginasPedidasRef = useRef<Set<number>>(new Set());
+  const idBuscaRef = useRef(0);
+  const jaCarregouInicialRef = useRef(false);
+
+  const carregarPagina = useCallback(async (numero: number, termoBusca: string) => {
+    if (numero === 0) {
+      paginasPedidasRef.current = new Set([0]);
+    } else {
+      if (paginasPedidasRef.current.has(numero)) return;
+      paginasPedidasRef.current.add(numero);
+    }
+
+    const idAtual = ++idBuscaRef.current;
+
+    try {
+      const resultado = await listarPagina({
+        filtro: termoBusca,
+        page: numero,
+        size: TAMANHO_PAGINA,
+        sort: 'criadoEm,desc',
+      });
+
+      if (idAtual !== idBuscaRef.current && numero === 0) return;
+
+      setDoacoes((atual) => (numero === 0 ? resultado.content : [...atual, ...resultado.content]));
+      setPaginaAtual(resultado.page.number);
+      setTotalPaginas(resultado.page.totalPages);
+      setErro('');
+    } catch {
+      paginasPedidasRef.current.delete(numero);
+      setErro(MSG_ERRO);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+    setCarregando(true);
+    setErro('');
+    carregarPagina(0, busca).finally(() => {
+      jaCarregouInicialRef.current = true;
+      if (!cancelado) setCarregando(false);
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, [busca, carregarPagina]);
 
   useFocusEffect(
     useCallback(() => {
-      let isActive = true;
-      listarDoacoes().then((dados) => {
-        if (isActive) setDoacoes(ordenarPorDataDesc(dados));
-      });
-      return () => { isActive = false; };
-    }, [])
+      if (!jaCarregouInicialRef.current) return;
+      carregarPagina(0, busca);
+    }, [busca, carregarPagina])
   );
 
-  const doacoesFiltradas = useMemo(
-    () => doacoes.filter((d) => d.tipoItem.toLowerCase().includes(busca.toLowerCase())),
-    [doacoes, busca]
-  );
-  const dadosResumo = useMemo(() => gerarResumo(doacoes), [doacoes]);
+  async function carregarMais() {
+    const proximaPagina = paginaAtual + 1;
+    if (
+      carregando ||
+      carregandoMais ||
+      atualizando ||
+      erro !== '' ||
+      proximaPagina >= totalPaginas ||
+      paginasPedidasRef.current.has(proximaPagina)
+    ) {
+      return;
+    }
+    setCarregandoMais(true);
+    await carregarPagina(proximaPagina, busca);
+    setCarregandoMais(false);
+  }
 
-  const renderResumo = () => {
-    if (dadosResumo.length === 0) return null;
+  async function atualizar() {
+    setAtualizando(true);
+    await carregarPagina(0, busca);
+    setAtualizando(false);
+  }
 
-    return (
-      <View style={styles.resumoContainer}>
-        <Text style={styles.resumoTitulo}>Resumo Geral de Doações</Text>
-        {dadosResumo.map((item) => (
-          <Text key={item.chave} style={styles.resumoItem}>
-            <Text style={styles.resumoItemNome}>{item.nome}: </Text>
-            {item.quantidade.toLocaleString('pt-BR')} unidades em {item.contagem} {item.contagem === 1 ? 'doação' : 'doações'}
-          </Text>
-        ))}
-      </View>
-    );
-  };
+  async function tentarNovamente() {
+    if (doacoes.length === 0) {
+      setErro('');
+      setCarregando(true);
+      await carregarPagina(0, busca);
+      setCarregando(false);
+    } else {
+      setErro('');
+      setCarregandoMais(true);
+      await carregarPagina(paginaAtual + 1, busca);
+      setCarregandoMais(false);
+    }
+  }
 
-  const renderEmptyState = () => {
+  function renderRodape() {
+    if (carregandoMais) return <ActivityIndicator style={styles.rodape} color="#00796B" />;
+    if (erro !== '' && doacoes.length > 0) {
+      return (
+        <View style={styles.rodape}>
+          <Text style={styles.erroTexto}>{erro}</Text>
+          <TouchableOpacity style={styles.botaoTentar} onPress={tentarNovamente}>
+            <Text style={styles.textoBotaoTentar}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return null;
+  }
+
+  function renderEmptyState() {
     if (busca.trim() !== '') {
       return (
         <View style={[styles.emptyContainer, { marginTop: 40 }]}>
@@ -97,15 +174,62 @@ export default function TelaHistoricoDoacoes({ navigation }: Props) {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>Você ainda não tem doações registradas.</Text>
-        <TouchableOpacity style={styles.botaoNovaDoacao} onPress={() => navigation.navigate('CadastroDoacao')}>
+        <TouchableOpacity
+          style={styles.botaoNovaDoacao}
+          onPress={() => navigation.navigate('CadastroDoacao')}
+        >
           <Text style={styles.textoBotaoNovaDoacao}>Fazer minha primeira doação</Text>
         </TouchableOpacity>
       </View>
     );
-  };
+  }
+
+  function renderConteudo() {
+    if (carregando) {
+      return (
+        <View style={styles.estadoContainer}>
+          <ActivityIndicator size="large" color="#00796B" />
+          <Text style={styles.carregandoTexto}>Carregando doações...</Text>
+        </View>
+      );
+    }
+
+    if (erro !== '' && doacoes.length === 0) {
+      return (
+        <View style={styles.estadoContainer}>
+          <Text style={styles.erroTexto}>{erro}</Text>
+          <TouchableOpacity style={styles.botaoTentar} onPress={tentarNovamente}>
+            <Text style={styles.textoBotaoTentar}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={doacoes}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <DoacaoItem doacao={item} />}
+        contentContainerStyle={
+          doacoes.length === 0 ? styles.listaVazia : styles.listaPreenchida
+        }
+        ListEmptyComponent={renderEmptyState}
+        ListFooterComponent={renderRodape}
+        onEndReached={carregarMais}
+        onEndReachedThreshold={0.4}
+        refreshing={atualizando}
+        onRefresh={atualizar}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      />
+    );
+  }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={styles.buscaContainer}>
         <TextInput
           style={styles.inputBusca}
@@ -117,16 +241,7 @@ export default function TelaHistoricoDoacoes({ navigation }: Props) {
         />
       </View>
 
-      <FlatList
-        data={doacoesFiltradas}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderResumo}
-        renderItem={({ item }) => <DoacaoItem doacao={item} />}
-        contentContainerStyle={doacoes.length === 0 ? styles.listaVazia : styles.listaPreenchida}
-        ListEmptyComponent={renderEmptyState}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      />
+      {renderConteudo()}
     </KeyboardAvoidingView>
   );
 }
@@ -154,31 +269,6 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
   },
-
-  resumoContainer: {
-    backgroundColor: '#E0F2F1',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#B2DFDB',
-  },
-  resumoTitulo: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#004D40',
-    marginBottom: 8,
-  },
-  resumoItem: {
-    fontSize: 14,
-    color: '#00695C',
-    marginBottom: 4,
-    lineHeight: 20,
-  },
-  resumoItemNome: {
-    fontWeight: 'bold',
-  },
-
   listaPreenchida: {
     padding: 16,
     paddingTop: 8,
@@ -240,5 +330,39 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  estadoContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  carregandoTexto: {
+    marginTop: 12,
+    color: '#666666',
+    fontSize: 15,
+  },
+  erroTexto: {
+    color: '#D32F2F',
+    fontWeight: '500',
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  botaoTentar: {
+    backgroundColor: '#00796B',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  textoBotaoTentar: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  rodape: {
+    paddingVertical: 16,
+    alignItems: 'center',
   },
 });

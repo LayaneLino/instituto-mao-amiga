@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 import type { Doacao } from '../types/doacao';
-import { excluirDoacao, obterDoacao } from '../services/doacoesStorage';
+import { buscarPorId as obterDoacao, excluir as excluirDoacao } from '../services/doacoesService';
 import { confirmarAcao, mostrarAlerta } from '../utils/alerta';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DetalheDoacao'>;
