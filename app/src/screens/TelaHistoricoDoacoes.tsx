@@ -32,7 +32,7 @@ const DoacaoItem = React.memo(({ doacao }: { doacao: Doacao }) => {
     <TouchableOpacity
       style={styles.cardItem}
       activeOpacity={0.7}
-      onPress={() => navigation.navigate('DetalheDoacao', { doacao })}
+      onPress={() => navigation.navigate('DetalheDoacao', { id: doacao.id })}
     >
       <View style={styles.cardHeader}>
         <Text style={styles.tituloItem} numberOfLines={2}>
