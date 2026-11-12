@@ -15,11 +15,31 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 import type { Ponto } from '../types/ponto';
 import { buscarPorId, excluir } from '../services/pontosService';
+import { listarFavoritos, salvarFavoritos } from '../services/favoritosStorage';
 
-function DetalhePonto({ ponto }: { ponto: Ponto }) {
+function DetalhePonto({
+  ponto,
+  favorito,
+  aoAlternarFavorito,
+}: {
+  ponto: Ponto;
+  favorito: boolean;
+  aoAlternarFavorito: () => void;
+}) {
   return (
     <View style={styles.container}>
-      <Text style={styles.nome}>{ponto.nome}</Text>
+      <View style={styles.cabecalhoCard}>
+        <Text style={styles.nome}>{ponto.nome}</Text>
+        <TouchableOpacity
+          style={styles.botaoFavorito}
+          onPress={aoAlternarFavorito}
+          accessibilityLabel={favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+        >
+          <Text style={[styles.iconeFavorito, favorito && styles.iconeFavoritoAtivo]}>
+            {favorito ? '♥' : '♡'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       <Text style={styles.label}>Endereço</Text>
       <Text style={styles.valor}>{ponto.endereco}</Text>
@@ -41,6 +61,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'DetalhePonto'>;
 export default function TelaDetalhePonto({ route, navigation }: Props) {
   const { id } = route.params;
   const [ponto, setPonto] = useState<Ponto | null>(null);
+  const [favorito, setFavorito] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
   const [erroExclusao, setErroExclusao] = useState('');
@@ -50,7 +71,12 @@ export default function TelaDetalhePonto({ route, navigation }: Props) {
     setCarregando(true);
     setErro('');
     try {
-      setPonto(await buscarPorId(id));
+      const [dadosPonto, idsFavoritos] = await Promise.all([
+        buscarPorId(id),
+        listarFavoritos(),
+      ]);
+      setPonto(dadosPonto);
+      setFavorito(idsFavoritos.includes(id));
     } catch {
       setErro(
         'Não foi possível carregar o ponto. Verifique se a API está no ar e tente novamente.'
@@ -65,6 +91,16 @@ export default function TelaDetalhePonto({ route, navigation }: Props) {
       carregar();
     }, [carregar])
   );
+
+  async function aoAlternarFavorito() {
+    const atuais = await listarFavoritos();
+    const jaEhFavorito = atuais.includes(id);
+    const novosFavoritos = jaEhFavorito
+      ? atuais.filter((item) => item !== id)
+      : [...atuais, id];
+    setFavorito(!jaEhFavorito);
+    await salvarFavoritos(novosFavoritos);
+  }
 
   async function executarExclusao() {
     if (!ponto || excluindo) return;
@@ -130,7 +166,11 @@ export default function TelaDetalhePonto({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <DetalhePonto ponto={ponto} />
+        <DetalhePonto
+          ponto={ponto}
+          favorito={favorito}
+          aoAlternarFavorito={aoAlternarFavorito}
+        />
 
         {erroExclusao !== '' && <Text style={styles.erroExclusao}>{erroExclusao}</Text>}
 
@@ -178,11 +218,31 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     marginBottom: 20,
   },
+  cabecalhoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   nome: {
+    flex: 1,
     fontSize: 22,
     fontWeight: 'bold',
     color: '#1B3A5C',
-    marginBottom: 16,
+    marginRight: 8,
+  },
+  botaoFavorito: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconeFavorito: {
+    fontSize: 24,
+    color: '#888888',
+  },
+  iconeFavoritoAtivo: {
+    color: '#D32F2F',
   },
   label: {
     fontSize: 13,

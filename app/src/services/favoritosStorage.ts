@@ -20,3 +20,10 @@ export async function salvarFavoritos(ids: string[]): Promise<void> {
     console.error('Erro ao salvar favoritos', error);
   }
 }
+
+export async function removerFavorito(id: string): Promise<string[]> {
+  const atuais = await listarFavoritos();
+  const atualizados = atuais.filter((item) => item !== id);
+  await salvarFavoritos(atualizados);
+  return atualizados;
+}

@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './src/types/navigation';
 import TelaListaPontos from './src/screens/TelaListaPontos';
+import TelaMeusPontos from './src/screens/TelaMeusPontos';
 import TelaDetalhePonto from './src/screens/TelaDetalhePonto';
 import TelaCadastroPonto from './src/screens/TelaCadastroPonto';
 import TelaCadastroDoacao from './src/screens/TelaCadastroDoacao';
@@ -22,6 +23,11 @@ export default function App() {
           name="ListaPontos"
           component={TelaListaPontos}
           options={{ title: 'Instituto Mão Amiga' }}
+        />
+        <Stack.Screen
+          name="MeusPontos"
+          component={TelaMeusPontos}
+          options={{ title: 'Meus pontos' }}
         />
         <Stack.Screen
           name="DetalhePonto"

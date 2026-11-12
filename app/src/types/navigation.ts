@@ -3,6 +3,7 @@ import type { Ponto } from './ponto';
 
 export type RootStackParamList = {
   ListaPontos: undefined;
+  MeusPontos: undefined;
   DetalhePonto: { id: string };
   CadastroPonto: { pontoToEdit?: Ponto } | undefined;
   CadastroDoacao: { doacaoToEdit?: Doacao } | undefined;

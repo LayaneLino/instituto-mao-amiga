@@ -121,27 +121,24 @@ export default function TelaListaPontos({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
+      listarFavoritos().then((ids) => {
+        setFavoritos(ids);
+        setFavoritosCarregados(true);
+      });
       if (!jaCarregouInicialRef.current) return;
       carregarPagina(0, busca);
     }, [busca, carregarPagina])
   );
 
-  useEffect(() => {
-    listarFavoritos().then((ids) => {
-      setFavoritos(ids);
-      setFavoritosCarregados(true);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (favoritosCarregados) salvarFavoritos(favoritos);
-  }, [favoritos, favoritosCarregados]);
-
   function alternarFavorito(id: string) {
     if (!favoritosCarregados) return;
-    setFavoritos((atual) =>
-      atual.includes(id) ? atual.filter((favId) => favId !== id) : [...atual, id]
-    );
+    setFavoritos((atual) => {
+      const proximo = atual.includes(id)
+        ? atual.filter((favId) => favId !== id)
+        : [...atual, id];
+      salvarFavoritos(proximo);
+      return proximo;
+    });
   }
 
   async function carregarMais() {
@@ -256,10 +253,17 @@ export default function TelaListaPontos({ navigation }: Props) {
 
       <View style={styles.botoesHeader}>
         <TouchableOpacity
-          style={[styles.botaoHeader, styles.botaoHistorico]}
+          style={[styles.botaoHeader, styles.botaoSecundario]}
+          onPress={() => navigation.navigate('MeusPontos')}
+        >
+          <Text style={styles.textoBotaoSecundario}>Meus pontos</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.botaoHeader, styles.botaoSecundario]}
           onPress={() => navigation.navigate('HistoricoDoacoes')}
         >
-          <Text style={styles.textoBotaoHistorico}>Meu Histórico</Text>
+          <Text style={styles.textoBotaoSecundario}>Doações</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -367,32 +371,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
+    gap: 8,
   },
   botaoHeader: {
     flex: 1,
-    padding: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  botaoHistorico: {
+  botaoSecundario: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#00796B',
-    marginRight: 8,
   },
   botaoDoar: {
     backgroundColor: '#00796B',
-    marginLeft: 8,
   },
-  textoBotaoHistorico: {
+  textoBotaoSecundario: {
     color: '#00796B',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 14,
+    textAlign: 'center',
   },
   textoBotaoNovaDoacao: {
     color: '#FFF',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 14,
+    textAlign: 'center',
   },
   botaoFavorito: {
     minWidth: 44,
