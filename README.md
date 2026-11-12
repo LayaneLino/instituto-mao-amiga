@@ -50,7 +50,8 @@ O projeto **Instituto Mão Amiga** é organizado em duas camadas principais:
 
 ### 📱 Aplicativo (`app/`)
 - **Listagem Paginada e Busca (`TelaListaPontos`):** Consumo da API (`GET /api/v1/pontos/filtro`) com campo de busca por nome ou bairro, rolagem infinita (`onEndReached` sem duplicar requisições de página), *pull-to-refresh*, indicador de carregamento inicial e mensagem amigável quando a API está desligada.
-- **Detalhes do Ponto (`TelaDetalhePonto`):** Recebe apenas o `id` (`UUID`) via navegação e busca os dados atualizados na API (`GET /api/v1/pontos/{id}`), tratando o status `404` com a mensagem `"Ponto não encontrado."`.
+- **Cadastro e Edição de Pontos (`TelaCadastroPonto`):** Formulário único reutilizado para criação (`POST`) e edição (`PUT`, com botão `"Salvar alterações"`), contendo `nome`, `endereco`, `bairro`, `horario` e seleção de `tipo` (`"coleta"` ou `"distribuição"` via `TouchableOpacity`), validação no app e preservação do que foi digitado caso a API recuse ou esteja offline.
+- **Detalhes e Exclusão do Ponto (`TelaDetalhePonto`):** Recebe apenas o `id` (`UUID`) via navegação, busca os dados na API (`GET /api/v1/pontos/{id}`), trata `404` com `"Ponto não encontrado."` e permite editar ou excluir (`DELETE` com confirmação via `Alert.alert`).
 - **Favoritos:** Marcação de pontos favoritos (`♡`/`♥`) persistida localmente no dispositivo (`AsyncStorage`).
 - **Gestão de Doações:** Cadastro, edição, exclusão, rascunho automático e histórico de doações.
 

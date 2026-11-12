@@ -8,6 +8,7 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 import type { Ponto } from '../types/ponto';
@@ -73,6 +74,7 @@ export default function TelaListaPontos({ navigation }: Props) {
 
   const paginasPedidasRef = useRef<Set<number>>(new Set());
   const idBuscaRef = useRef(0);
+  const jaCarregouInicialRef = useRef(false);
 
   const carregarPagina = useCallback(async (numero: number, termoBusca: string) => {
     if (numero === 0) {
@@ -109,12 +111,20 @@ export default function TelaListaPontos({ navigation }: Props) {
     setCarregando(true);
     setErro('');
     carregarPagina(0, busca).finally(() => {
+      jaCarregouInicialRef.current = true;
       if (!cancelado) setCarregando(false);
     });
     return () => {
       cancelado = true;
     };
   }, [busca, carregarPagina]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!jaCarregouInicialRef.current) return;
+      carregarPagina(0, busca);
+    }, [busca, carregarPagina])
+  );
 
   useEffect(() => {
     listarFavoritos().then((ids) => {
@@ -234,7 +244,15 @@ export default function TelaListaPontos({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.tituloTela}>Pontos de Coleta</Text>
+      <View style={styles.topoLinha}>
+        <Text style={styles.tituloTela}>Pontos de Coleta</Text>
+        <TouchableOpacity
+          style={styles.botaoNovoPonto}
+          onPress={() => navigation.navigate('CadastroPonto')}
+        >
+          <Text style={styles.textoBotaoNovoPonto}>+ Novo Ponto</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.botoesHeader}>
         <TouchableOpacity
@@ -272,12 +290,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4F6F8',
     padding: 16,
   },
+  topoLinha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    marginTop: 4,
+  },
   tituloTela: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#1B3A5C',
-    marginBottom: 16,
-    marginTop: 8,
+  },
+  botaoNovoPonto: {
+    backgroundColor: '#1B3A5C',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  textoBotaoNovoPonto: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   inputBusca: {
     backgroundColor: '#FFFFFF',

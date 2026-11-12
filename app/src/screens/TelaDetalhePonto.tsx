@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,15 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
+  Platform,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 import type { Ponto } from '../types/ponto';
-import { buscarPorId } from '../services/pontosService';
+import { buscarPorId, excluir } from '../services/pontosService';
 
 function DetalhePonto({ ponto }: { ponto: Ponto }) {
   return (
@@ -35,11 +38,13 @@ function DetalhePonto({ ponto }: { ponto: Ponto }) {
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DetalhePonto'>;
 
-export default function TelaDetalhePonto({ route }: Props) {
+export default function TelaDetalhePonto({ route, navigation }: Props) {
   const { id } = route.params;
   const [ponto, setPonto] = useState<Ponto | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [erroExclusao, setErroExclusao] = useState('');
+  const [excluindo, setExcluindo] = useState(false);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -55,9 +60,41 @@ export default function TelaDetalhePonto({ route }: Props) {
     }
   }, [id]);
 
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
+  useFocusEffect(
+    useCallback(() => {
+      carregar();
+    }, [carregar])
+  );
+
+  async function executarExclusao() {
+    if (!ponto || excluindo) return;
+    setErroExclusao('');
+    setExcluindo(true);
+    try {
+      await excluir(ponto.id);
+      navigation.goBack();
+    } catch {
+      setErroExclusao(
+        'Não foi possível excluir o ponto. Verifique se a API está no ar e tente novamente.'
+      );
+    } finally {
+      setExcluindo(false);
+    }
+  }
+
+  function confirmarExclusao() {
+    if (Platform.OS === 'web') {
+      if (window.confirm('Tem certeza que deseja excluir este ponto?')) {
+        executarExclusao();
+      }
+      return;
+    }
+
+    Alert.alert('Excluir Ponto', 'Tem certeza que deseja excluir este ponto?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Excluir', style: 'destructive', onPress: executarExclusao },
+    ]);
+  }
 
   if (carregando) {
     return (
@@ -94,6 +131,28 @@ export default function TelaDetalhePonto({ route }: Props) {
     <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <DetalhePonto ponto={ponto} />
+
+        {erroExclusao !== '' && <Text style={styles.erroExclusao}>{erroExclusao}</Text>}
+
+        <View style={styles.botoesContainer}>
+          <TouchableOpacity
+            style={styles.botaoEditar}
+            onPress={() => navigation.navigate('CadastroPonto', { pontoToEdit: ponto })}
+            disabled={excluindo}
+          >
+            <Text style={styles.textoBotaoEditar}>Editar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.botaoExcluir, excluindo && styles.botaoDesabilitado]}
+            onPress={confirmarExclusao}
+            disabled={excluindo}
+          >
+            <Text style={styles.textoBotaoExcluir}>
+              {excluindo ? 'Excluindo...' : 'Excluir'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -117,6 +176,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
+    marginBottom: 20,
   },
   nome: {
     fontSize: 22,
@@ -147,6 +207,48 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     textTransform: 'capitalize',
     marginTop: 4,
+  },
+  botoesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  botaoEditar: {
+    flex: 1,
+    backgroundColor: '#00796B',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  textoBotaoEditar: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  botaoExcluir: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D32F2F',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  textoBotaoExcluir: {
+    color: '#D32F2F',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  botaoDesabilitado: {
+    opacity: 0.6,
+  },
+  erroExclusao: {
+    color: '#D32F2F',
+    fontWeight: '500',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
   },
   botaoTentar: {
     backgroundColor: '#00796B',
