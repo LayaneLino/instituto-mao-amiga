@@ -49,7 +49,9 @@ O projeto **Instituto Mão Amiga** é organizado em duas camadas principais:
 - **Persistência em Arquivo (H2):** Dados mantidos entre reinícios em `./data/maoamiga`, com carga inicial automática de 26 pontos em Goiânia sem duplicação.
 
 ### 📱 Aplicativo (`app/`)
-- **Consulta de Pontos e Favoritos:** Visualização dos pontos de coleta e marcação de favoritos no dispositivo (`AsyncStorage`).
+- **Listagem Paginada e Busca (`TelaListaPontos`):** Consumo da API (`GET /api/v1/pontos/filtro`) com campo de busca por nome ou bairro, rolagem infinita (`onEndReached` sem duplicar requisições de página), *pull-to-refresh*, indicador de carregamento inicial e mensagem amigável quando a API está desligada.
+- **Detalhes do Ponto (`TelaDetalhePonto`):** Recebe apenas o `id` (`UUID`) via navegação e busca os dados atualizados na API (`GET /api/v1/pontos/{id}`), tratando o status `404` com a mensagem `"Ponto não encontrado."`.
+- **Favoritos:** Marcação de pontos favoritos (`♡`/`♥`) persistida localmente no dispositivo (`AsyncStorage`).
 - **Gestão de Doações:** Cadastro, edição, exclusão, rascunho automático e histórico de doações.
 
 ---
@@ -162,7 +164,7 @@ A comunicação com o backend é centralizada em [`app/src/services/api.ts`](./a
 
 | Ambiente | Host Resolvido | Como Funciona |
 | :--- | :--- | :--- |
-| **Expo Go (Dispositivo Físico)** | `http://<IP-DO-PC>:8080` (ex: `192.168.0.4:8080`) | **Automático**: Extrai o IP da máquina hospedeira a partir do Metro bundler via `expo-constants`. |
+| **Expo Go (Dispositivo Físico)** | `http://<IP-DO-PC>:8080` (ex: `192.168.0.18:8080`) | **Automático**: Extrai o IP da máquina hospedeira a partir do Metro bundler via `expo-constants`. |
 | **Emulador Android Studio** | `http://10.0.2.2:8080` | **Automático**: Utiliza o alias oficial do emulador para a máquina host. |
 | **Simulador iOS / Web** | `http://localhost:8080` | **Automático**: Comunicação direta via `localhost`. |
 

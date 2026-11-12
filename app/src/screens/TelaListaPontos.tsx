@@ -1,30 +1,56 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  ActivityIndicator,
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 import type { Ponto } from '../types/ponto';
-import { listarPontos } from '../services/pontosService';
+import { buscarPagina } from '../services/pontosService';
 import { listarFavoritos, salvarFavoritos } from '../services/favoritosStorage';
 
-const TAMANHO_PAGINA = 20;
-const MSG_ERRO = 'Não foi possível carregar os pontos de coleta. Verifique se a API está no ar e tente novamente.';
+const TAMANHO_PAGINA = 10;
+const MSG_ERRO =
+  'Não foi possível carregar os pontos de coleta. Verifique se a API está no ar e tente novamente.';
 
-function PontoItem({ ponto, onPress, isFavorito, onToggleFavorito }: { ponto: Ponto; onPress: () => void; isFavorito: boolean; onToggleFavorito: () => void }) {
+function PontoItem({
+  ponto,
+  onPress,
+  isFavorito,
+  onToggleFavorito,
+}: {
+  ponto: Ponto;
+  onPress: () => void;
+  isFavorito: boolean;
+  onToggleFavorito: () => void;
+}) {
   return (
     <View style={styles.cardContainer}>
       <TouchableOpacity style={styles.cardContent} onPress={onPress} activeOpacity={0.7}>
         <Text style={styles.nomePonto}>{ponto.nome}</Text>
-        <Text style={styles.enderecoPonto}>{ponto.endereco}</Text>
-        <Text style={styles.itensPonto}>{ponto.itensRecebeDistribui}</Text>
+        <Text style={styles.enderecoPonto}>
+          {ponto.endereco} — {ponto.bairro}
+        </Text>
+        <Text style={styles.horarioPonto}>{ponto.horario}</Text>
+        <Text style={styles.tipoPonto}>Tipo: {ponto.tipo}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.botaoFavorito}
         onPress={onToggleFavorito}
         accessibilityRole="button"
-        accessibilityLabel={isFavorito ? `Remover ${ponto.nome} dos favoritos` : `Adicionar ${ponto.nome} aos favoritos`}
+        accessibilityLabel={
+          isFavorito
+            ? `Remover ${ponto.nome} dos favoritos`
+            : `Adicionar ${ponto.nome} aos favoritos`
+        }
       >
-        <Text style={styles.favoritoTexto}>{isFavorito ? '★' : '☆'}</Text>
+        <Text style={styles.favoritoTexto}>{isFavorito ? '♥' : '♡'}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -34,6 +60,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ListaPontos'>;
 
 export default function TelaListaPontos({ navigation }: Props) {
   const [pontos, setPontos] = useState<Ponto[]>([]);
+  const [busca, setBusca] = useState('');
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(0);
   const [carregando, setCarregando] = useState(true);
@@ -41,24 +68,53 @@ export default function TelaListaPontos({ navigation }: Props) {
   const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState('');
 
-  const [favoritos, setFavoritos] = useState<number[]>([]);
+  const [favoritos, setFavoritos] = useState<string[]>([]);
   const [favoritosCarregados, setFavoritosCarregados] = useState(false);
 
-  const carregarPagina = useCallback(async (numero: number) => {
+  const paginasPedidasRef = useRef<Set<number>>(new Set());
+  const idBuscaRef = useRef(0);
+
+  const carregarPagina = useCallback(async (numero: number, termoBusca: string) => {
+    if (numero === 0) {
+      paginasPedidasRef.current = new Set([0]);
+    } else {
+      if (paginasPedidasRef.current.has(numero)) return;
+      paginasPedidasRef.current.add(numero);
+    }
+
+    const idAtual = ++idBuscaRef.current;
+
     try {
-      const resultado = await listarPontos({ page: numero, size: TAMANHO_PAGINA, sort: 'id,asc' });
+      const resultado = await buscarPagina({
+        filtro: termoBusca,
+        page: numero,
+        size: TAMANHO_PAGINA,
+        sort: 'nome,asc',
+      });
+
+      if (idAtual !== idBuscaRef.current && numero === 0) return;
+
       setPontos((atual) => (numero === 0 ? resultado.content : [...atual, ...resultado.content]));
       setPaginaAtual(resultado.page.number);
       setTotalPaginas(resultado.page.totalPages);
       setErro('');
     } catch {
+      paginasPedidasRef.current.delete(numero);
       setErro(MSG_ERRO);
     }
   }, []);
 
   useEffect(() => {
-    carregarPagina(0).finally(() => setCarregando(false));
-  }, [carregarPagina]);
+    let cancelado = false;
+    setCarregando(true);
+    setErro('');
+    carregarPagina(0, busca).finally(() => {
+      if (!cancelado) setCarregando(false);
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, [busca, carregarPagina]);
 
   useEffect(() => {
     listarFavoritos().then((ids) => {
@@ -71,21 +127,33 @@ export default function TelaListaPontos({ navigation }: Props) {
     if (favoritosCarregados) salvarFavoritos(favoritos);
   }, [favoritos, favoritosCarregados]);
 
-  function alternarFavorito(id: number) {
+  function alternarFavorito(id: string) {
     if (!favoritosCarregados) return;
-    setFavoritos((atual) => (atual.includes(id) ? atual.filter((favId) => favId !== id) : [...atual, id]));
+    setFavoritos((atual) =>
+      atual.includes(id) ? atual.filter((favId) => favId !== id) : [...atual, id]
+    );
   }
 
   async function carregarMais() {
-    if (carregando || carregandoMais || atualizando || erro !== '' || paginaAtual + 1 >= totalPaginas) return;
+    const proximaPagina = paginaAtual + 1;
+    if (
+      carregando ||
+      carregandoMais ||
+      atualizando ||
+      erro !== '' ||
+      proximaPagina >= totalPaginas ||
+      paginasPedidasRef.current.has(proximaPagina)
+    ) {
+      return;
+    }
     setCarregandoMais(true);
-    await carregarPagina(paginaAtual + 1);
+    await carregarPagina(proximaPagina, busca);
     setCarregandoMais(false);
   }
 
   async function atualizar() {
     setAtualizando(true);
-    await carregarPagina(0);
+    await carregarPagina(0, busca);
     setAtualizando(false);
   }
 
@@ -93,12 +161,12 @@ export default function TelaListaPontos({ navigation }: Props) {
     if (pontos.length === 0) {
       setErro('');
       setCarregando(true);
-      await carregarPagina(0);
+      await carregarPagina(0, busca);
       setCarregando(false);
     } else {
       setErro('');
       setCarregandoMais(true);
-      await carregarPagina(paginaAtual + 1);
+      await carregarPagina(paginaAtual + 1, busca);
       setCarregandoMais(false);
     }
   }
@@ -137,7 +205,7 @@ export default function TelaListaPontos({ navigation }: Props) {
     return (
       <FlatList
         data={pontos}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <PontoItem
             ponto={item}
@@ -146,10 +214,16 @@ export default function TelaListaPontos({ navigation }: Props) {
             onPress={() => navigation.navigate('DetalhePonto', { id: item.id })}
           />
         )}
-        ListEmptyComponent={<Text style={styles.vazioTexto}>Nenhum ponto de coleta cadastrado.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.vazioTexto}>
+            {busca.trim() !== ''
+              ? 'Nenhum ponto encontrado para a busca informada.'
+              : 'Nenhum ponto de coleta cadastrado.'}
+          </Text>
+        }
         ListFooterComponent={renderRodape}
         onEndReached={carregarMais}
-        onEndReachedThreshold={0.5}
+        onEndReachedThreshold={0.4}
         refreshing={atualizando}
         onRefresh={atualizar}
         showsVerticalScrollIndicator={false}
@@ -178,6 +252,15 @@ export default function TelaListaPontos({ navigation }: Props) {
         </TouchableOpacity>
       </View>
 
+      <TextInput
+        style={styles.inputBusca}
+        placeholder="Buscar por nome ou bairro..."
+        placeholderTextColor="#888888"
+        value={busca}
+        onChangeText={setBusca}
+        autoCorrect={false}
+      />
+
       {renderConteudo()}
     </View>
   );
@@ -196,6 +279,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 8,
   },
+  inputBusca: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D0D7DE',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#1B3A5C',
+    marginBottom: 16,
+  },
   cardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,7 +304,7 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
-    padding: 16
+    padding: 16,
   },
   nomePonto: {
     fontSize: 18,
@@ -220,19 +314,25 @@ const styles = StyleSheet.create({
   },
   enderecoPonto: {
     fontSize: 14,
-    color: '#666666',
-    marginBottom: 8,
+    color: '#555555',
+    marginBottom: 4,
   },
-  itensPonto: {
+  horarioPonto: {
+    fontSize: 13,
+    color: '#666666',
+    marginBottom: 4,
+  },
+  tipoPonto: {
     fontSize: 13,
     color: '#00796B',
     fontWeight: '600',
-    marginTop: 4,
+    textTransform: 'capitalize',
+    marginTop: 2,
   },
   botoesHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   botaoHeader: {
     flex: 1,
@@ -261,13 +361,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   botaoFavorito: {
+    minWidth: 44,
+    minHeight: 44,
     padding: 16,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   favoritoTexto: {
     fontSize: 24,
-    color: '#FBC02D'
+    color: '#E53935',
   },
   botaoTentar: {
     backgroundColor: '#00796B',

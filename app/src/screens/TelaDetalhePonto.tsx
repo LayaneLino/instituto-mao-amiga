@@ -1,18 +1,34 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 import type { Ponto } from '../types/ponto';
-import { buscarPontoPorId } from '../services/pontosService';
+import { buscarPorId } from '../services/pontosService';
 
 function DetalhePonto({ ponto }: { ponto: Ponto }) {
   return (
     <View style={styles.container}>
       <Text style={styles.nome}>{ponto.nome}</Text>
-      <Text style={styles.endereco}>{ponto.endereco}</Text>
-      <Text style={styles.horarios}>{ponto.diasHorarios}</Text>
-      <Text style={styles.itens}>{ponto.itensRecebeDistribui}</Text>
+
+      <Text style={styles.label}>Endereço</Text>
+      <Text style={styles.valor}>{ponto.endereco}</Text>
+
+      <Text style={styles.label}>Bairro</Text>
+      <Text style={styles.valor}>{ponto.bairro}</Text>
+
+      <Text style={styles.label}>Horário de funcionamento</Text>
+      <Text style={styles.valor}>{ponto.horario}</Text>
+
+      <Text style={styles.label}>Tipo</Text>
+      <Text style={styles.tipoBadge}>{ponto.tipo}</Text>
     </View>
   );
 }
@@ -29,9 +45,11 @@ export default function TelaDetalhePonto({ route }: Props) {
     setCarregando(true);
     setErro('');
     try {
-      setPonto(await buscarPontoPorId(id));
+      setPonto(await buscarPorId(id));
     } catch {
-      setErro('Não foi possível carregar o ponto. Verifique se a API está no ar e tente novamente.');
+      setErro(
+        'Não foi possível carregar o ponto. Verifique se a API está no ar e tente novamente.'
+      );
     } finally {
       setCarregando(false);
     }
@@ -94,8 +112,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 20,
     borderRadius: 8,
-    elevation: 2, 
-    shadowColor: '#000', 
+    elevation: 2,
+    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
@@ -104,23 +122,31 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#1B3A5C',
-    marginBottom: 8,
-  },
-  endereco: {
-    fontSize: 16,
-    color: '#4A4A4A',
-    marginBottom: 4,
-  },
-  horarios: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#00796B',
     marginBottom: 16,
   },
-  itens: {
-    fontSize: 15,
+  label: {
+    fontSize: 13,
+    color: '#666666',
+    textTransform: 'uppercase',
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  valor: {
+    fontSize: 16,
     color: '#333333',
-    lineHeight: 22,
+  },
+  tipoBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E0F2F1',
+    color: '#00796B',
+    fontWeight: 'bold',
+    fontSize: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    textTransform: 'capitalize',
+    marginTop: 4,
   },
   botaoTentar: {
     backgroundColor: '#00796B',

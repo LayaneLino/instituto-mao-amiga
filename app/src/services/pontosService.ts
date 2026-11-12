@@ -1,40 +1,50 @@
-import type { PaginaPontos, Ponto } from '../types/ponto';
-import { ApiError, apiGet } from './api';
+import type { NovoPonto, PaginaPontos, Ponto } from '../types/ponto';
+import { ApiError, del, get, post, put } from './api';
 
-const TAMANHO_MAXIMO_PAGINA = 50;
-
-type OpcoesListagem = {
+type OpcoesBuscaPagina = {
+  filtro?: string;
   page?: number;
   size?: number;
   sort?: string;
 };
 
-export function listarPontos({ page = 0, size = 20, sort }: OpcoesListagem = {}): Promise<PaginaPontos> {
+export function listar(): Promise<Ponto[]> {
+  return get<Ponto[]>('/api/v1/pontos');
+}
+
+export function buscarPagina({
+  filtro = '',
+  page = 0,
+  size = 10,
+  sort = 'nome,asc',
+}: OpcoesBuscaPagina = {}): Promise<PaginaPontos> {
   const parametros: Record<string, string | number> = { page, size };
   if (sort) parametros.sort = sort;
-  return apiGet<PaginaPontos>('/pontos', parametros);
+  if (filtro.trim() !== '') parametros.filtro = filtro.trim();
+  return get<PaginaPontos>('/api/v1/pontos/filtro', parametros);
 }
 
-export async function listarTodosPontos(): Promise<Ponto[]> {
-  const todos: Ponto[] = [];
-  let pagina = 0;
-  let totalPaginas = 1;
-
-  while (pagina < totalPaginas) {
-    const resultado = await listarPontos({ page: pagina, size: TAMANHO_MAXIMO_PAGINA, sort: 'nome,asc' });
-    todos.push(...resultado.content);
-    totalPaginas = resultado.page.totalPages;
-    pagina += 1;
-  }
-
-  return todos;
-}
-
-export async function buscarPontoPorId(id: number): Promise<Ponto | null> {
+export async function buscarPorId(id: string): Promise<Ponto | null> {
   try {
-    return await apiGet<Ponto>(`/pontos/${id}`);
+    return await get<Ponto>(`/api/v1/pontos/${id}`);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return null;
     throw error;
   }
 }
+
+export function cadastrar(dados: NovoPonto): Promise<Ponto> {
+  return post<Ponto>('/api/v1/pontos', dados);
+}
+
+export function editar(id: string, dados: NovoPonto): Promise<Ponto> {
+  return put<Ponto>(`/api/v1/pontos/${id}`, dados);
+}
+
+export function excluir(id: string): Promise<void> {
+  return del(`/api/v1/pontos/${id}`);
+}
+
+export const listarPontos = buscarPagina;
+export const listarTodosPontos = listar;
+export const buscarPontoPorId = buscarPorId;
