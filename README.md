@@ -48,6 +48,11 @@ O projeto **Instituto Mão Amiga** é organizado em duas camadas principais:
 - **Validação no Servidor (`@Valid`):** Campos obrigatórios (`nome`, `endereco`, `bairro`, `horario` e `tipo`) validados via `PontoRequestDTO`, retornando `400 Bad Request` caso algum campo esteja vazio.
 - **Persistência em Arquivo (H2):** Dados mantidos entre reinícios em `./data/maoamiga`, com carga inicial automática de 26 pontos em Goiânia sem duplicação.
 
+### 📦 Doações (API)
+- **CRUD Completo (`/api/v1/doacoes`):** Listagem, busca por `UUID`, cadastro (`POST` preenchendo `criadoEm` no servidor com `LocalDateTime.now()`), edição (`PUT` mantendo `id` e `criadoEm` originais) e exclusão (`DELETE`).
+- **Busca Paginada por Tipo de Item (`/api/v1/doacoes/filtro`):** Filtro *case-insensitive* por `tipoItem` com ordenação padrão da mais nova para a mais antiga (`@PageableDefault(size = 10, sort = "criadoEm", direction = Sort.Direction.DESC)`).
+- **Validação no Servidor (`@Valid`):** `DoacaoRequestDTO` valida `tipoItem` e `pontoDestino` obrigatórios (`@NotBlank`) e `quantidade` inteira maior que zero (`@NotNull`, `@Positive`), respondendo `400 Bad Request` sem gravar dados inválidos.
+
 ### 📱 Aplicativo (`app/`)
 - **Listagem Paginada e Busca (`TelaListaPontos`):** Consumo da API (`GET /api/v1/pontos/filtro`) com campo de busca por nome ou bairro, rolagem infinita (`onEndReached` sem duplicar requisições de página), *pull-to-refresh*, indicador de carregamento inicial e mensagem amigável quando a API está desligada.
 - **Cadastro e Edição de Pontos (`TelaCadastroPonto`):** Formulário único reutilizado para criação (`POST`) e edição (`PUT`, com botão `"Salvar alterações"`), contendo `nome`, `endereco`, `bairro`, `horario` e seleção de `tipo` (`"coleta"` ou `"distribuição"` via `TouchableOpacity`), validação no app e preservação do que foi digitado caso a API recuse ou esteja offline.
@@ -412,6 +417,120 @@ Sem corpo de resposta (`204 No Content`).
   "status": 404,
   "detail": "Ponto não encontrado com id: 00000000-0000-0000-0000-000000000000",
   "instance": "/api/v1/pontos/00000000-0000-0000-0000-000000000000"
+}
+```
+
+---
+
+### Rotas Disponíveis — Doações (`/api/v1/doacoes`)
+
+| Método | URL Completa | Descrição | Status de Sucesso |
+| :---: | :--- | :--- | :---: |
+| `GET` | `http://localhost:8080/api/v1/doacoes` | Lista todas as doações registradas | `200 OK` |
+| `GET` | `http://localhost:8080/api/v1/doacoes/filtro` | Busca paginada por `tipoItem` ordenada por `criadoEm,desc` | `200 OK` |
+| `GET` | `http://localhost:8080/api/v1/doacoes/{id}` | Busca uma doação específica por UUID | `200 OK` |
+| `POST` | `http://localhost:8080/api/v1/doacoes` | Cadastra uma nova doação (com `@Valid`) | `201 Created` |
+| `PUT` | `http://localhost:8080/api/v1/doacoes/{id}` | Atualiza uma doação por UUID mantendo `criadoEm` | `200 OK` |
+| `DELETE` | `http://localhost:8080/api/v1/doacoes/{id}` | Exclui uma doação existente por UUID | `204 No Content` |
+
+#### 1. `POST http://localhost:8080/api/v1/doacoes` (`201 Created`)
+**Corpo da Requisição (`DoacaoRequestDTO`):**
+```json
+{
+  "tipoItem": "Cesta Básica",
+  "quantidade": 5,
+  "pontoDestino": "Instituto Mão Amiga"
+}
+```
+**Resposta (`201 Created`):**
+```json
+{
+  "id": "8f14e45f-ceea-467a-a8f1-4e45fceea67a",
+  "tipoItem": "Cesta Básica",
+  "quantidade": 5,
+  "pontoDestino": "Instituto Mão Amiga",
+  "criadoEm": "2026-11-11T23:05:00"
+}
+```
+
+#### 2. `GET http://localhost:8080/api/v1/doacoes/filtro?filtro=cesta&page=0&size=10` (`200 OK`)
+```json
+{
+  "content": [
+    {
+      "id": "8f14e45f-ceea-467a-a8f1-4e45fceea67a",
+      "tipoItem": "Cesta Básica",
+      "quantidade": 5,
+      "pontoDestino": "Instituto Mão Amiga",
+      "criadoEm": "2026-11-11T23:05:00"
+    }
+  ],
+  "page": {
+    "size": 10,
+    "number": 0,
+    "totalElements": 1,
+    "totalPages": 1
+  }
+}
+```
+
+#### 3. `GET http://localhost:8080/api/v1/doacoes/{id}` (`200 OK`)
+```json
+{
+  "id": "8f14e45f-ceea-467a-a8f1-4e45fceea67a",
+  "tipoItem": "Cesta Básica",
+  "quantidade": 5,
+  "pontoDestino": "Instituto Mão Amiga",
+  "criadoEm": "2026-11-11T23:05:00"
+}
+```
+
+#### 4. `PUT http://localhost:8080/api/v1/doacoes/{id}` (`200 OK`)
+**Corpo da Requisição (`DoacaoRequestDTO`):**
+```json
+{
+  "tipoItem": "Roupas e Agasalhos",
+  "quantidade": 12,
+  "pontoDestino": "Shopping Flamboyant"
+}
+```
+**Resposta (`200 OK`):**
+```json
+{
+  "id": "8f14e45f-ceea-467a-a8f1-4e45fceea67a",
+  "tipoItem": "Roupas e Agasalhos",
+  "quantidade": 12,
+  "pontoDestino": "Shopping Flamboyant",
+  "criadoEm": "2026-11-11T23:05:00"
+}
+```
+
+#### 5. `DELETE http://localhost:8080/api/v1/doacoes/{id}` (`204 No Content`)
+Sem corpo de resposta (`204 No Content`).
+
+#### 6. Erro de Validação em Doações (`400 Bad Request` — Quantidade <= 0 ou campo vazio)
+```json
+{
+  "type": "about:blank",
+  "title": "Erro de validação",
+  "status": 400,
+  "detail": "Um ou mais campos obrigatórios estão inválidos ou vazios.",
+  "instance": "/api/v1/doacoes",
+  "campos": {
+    "tipoItem": "O tipo do item é obrigatório",
+    "quantidade": "A quantidade deve ser maior que zero"
+  }
+}
+```
+
+#### 7. Doação Não Encontrada (`404 Not Found` — ID inexistente)
+```json
+{
+  "type": "about:blank",
+  "title": "Doação não encontrada",
+  "status": 404,
+  "detail": "Doação não encontrada com id: 00000000-0000-0000-0000-000000000000",
+  "instance": "/api/v1/doacoes/00000000-0000-0000-0000-000000000000"
 }
 ```
 

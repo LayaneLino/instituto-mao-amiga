@@ -1,5 +1,6 @@
 package br.com.maoamiga.api.config;
 
+import br.com.maoamiga.api.service.DoacaoNaoEncontradaException;
 import br.com.maoamiga.api.service.PontoNaoEncontradoException;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
@@ -17,9 +18,16 @@ import java.util.Map;
 public class TratamentoDeErros {
 
     @ExceptionHandler(PontoNaoEncontradoException.class)
-    public ResponseEntity<ProblemDetail> naoEncontrado(PontoNaoEncontradoException ex) {
+    public ResponseEntity<ProblemDetail> pontoNaoEncontrado(PontoNaoEncontradoException ex) {
         ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problema.setTitle("Ponto não encontrado");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problema);
+    }
+
+    @ExceptionHandler(DoacaoNaoEncontradaException.class)
+    public ResponseEntity<ProblemDetail> doacaoNaoEncontrada(DoacaoNaoEncontradaException ex) {
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problema.setTitle("Doação não encontrada");
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problema);
     }
 
